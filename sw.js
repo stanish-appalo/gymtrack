@@ -1,5 +1,5 @@
-// GymTrack service worker — offline support
-const CACHE = 'gymtrack-v1';
+// GymTrack service worker — offline support (only caches successful responses)
+const CACHE = 'gymtrack-v2';
 const CORE = ['./', 'index.html', 'manifest.webmanifest', 'assets/exmap.js', 'assets/library.js', 'assets/icon-192.png', 'assets/icon-512.png', 'assets/icon-180.png'];
 
 self.addEventListener('install', e => {
@@ -11,11 +11,22 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
-  e.respondWith(
-    caches.match(req).then(hit => hit || fetch(req).then(res => {
-      const copy = res.clone();
-      caches.open(CACHE).then(c => c.put(req, copy));
+  e.respondWith((async () => {
+    const cached = await caches.match(req);
+    if (cached) return cached;
+    try {
+      const res = await fetch(req);
+      if (res && res.ok && res.type === 'basic') {        // only cache successful same-origin responses
+        const c = await caches.open(CACHE);
+        c.put(req, res.clone());
+      }
       return res;
-    }).catch(() => caches.match('index.html')))
-  );
+    } catch (err) {
+      if (req.mode === 'navigate') {
+        const fb = await caches.match('index.html');
+        if (fb) return fb;
+      }
+      throw err;
+    }
+  })());
 });
