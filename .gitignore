@@ -1,0 +1,7 @@
+# Build-only tools (not part of the app)
+exdb.json
+download.js
+generate-library.js
+makeicon.js
+_smoke.js
+node_modules/
