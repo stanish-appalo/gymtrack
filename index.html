@@ -192,6 +192,8 @@
   .datebar .nav{width:36px;height:36px;border-radius:11px;border:1px solid var(--line);background:var(--card);color:var(--txt);font-size:18px;cursor:pointer}
   .datebar .dt{font-weight:800;font-size:15px;flex:1;text-align:center}
   .wchip{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:7px 12px;font-size:12px;font-weight:800;color:#2bd4c0;cursor:pointer}
+  .daychip{padding:9px 14px;border-radius:11px;border:1px solid var(--line);background:var(--card2);color:var(--mut);font-weight:800;font-size:13px;cursor:pointer}
+  .daychip.sel{background:var(--grad);color:#fff;border-color:transparent}
   .tcard{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}
   .tline{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px}
   .tline .lab{font-size:13px;font-weight:800}.tline .val{font-size:12.5px;color:var(--mut)}
@@ -268,6 +270,14 @@
     <p class="muted">You can't burn fat from one spot by training it — fat leaves your whole body when you eat slightly less than you burn. Do this:</p>
     <p class="muted">• Eat ~300–400 kcal under maintenance.<br>• Protein ~110 g/day (chicken, eggs, fish, dairy, legumes).<br>• Keep the cardio finishers.<br>• Lift heavy (this app) to build the shape underneath.<br>• 7–8 h sleep, 8k+ steps/day.</p>
   </div>
+  <div class="sectlbl">Workout Split</div>
+  <p class="muted" id="modeDesc" style="margin:0 0 10px"></p>
+  <div class="btnrow"><button class="btn ghost" id="mode5Btn">5-Day Full Split</button><button class="btn ghost" id="mode4Btn">4-Day Arms & Shoulders</button></div>
+  <div id="dayPickerWrap" style="display:none;margin-top:14px">
+    <span class="lbl">Pick your 4 gym days</span>
+    <div id="dayPicker" style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"></div>
+    <p class="muted" style="margin-top:8px">Tap to select/deselect — pick exactly 4. The 5th weekday becomes a rest day; Sat/Sun stay optional/rest.</p>
+  </div>
   <div class="sectlbl">Progress</div>
   <button class="btn ghost" id="resetWeekBtn">↻ Reset this week's checkmarks</button>
   <div class="sectlbl">Backup your data</div>
@@ -297,6 +307,8 @@ const EXIMG = window.EXIMG || {};
 const EXLIB = window.EXLIB || [];
 function imgsFor(e){return (e&&e.imgKey&&EXIMG[e.imgKey])||(e&&EXIMG[e.id])||null;}
 const DAYS=['mon','tue','wed','thu','fri','sat','sun'];
+const WEEKDAYS5=['mon','tue','wed','thu','fri'];
+const DEFAULT_TRAIN_DAYS=['mon','tue','thu','fri'];
 const DLABEL={mon:'Mon',tue:'Tue',wed:'Wed',thu:'Thu',fri:'Fri',sat:'Sat',sun:'Sun'};
 const FULLDAY={mon:'Monday',tue:'Tuesday',wed:'Wednesday',thu:'Thursday',fri:'Friday',sat:'Saturday',sun:'Sunday'};
 const FOCUS={mon:'Chest & Triceps',tue:'Back & Biceps',wed:'Shoulders & Abs',thu:'Arms & Abs',fri:'Legs & Core',sat:'Optional · Cardio + Pump',sun:'Rest / Active Recovery'};
@@ -310,7 +322,10 @@ function E(name,sets,reps,type,anim,muscles,steps){
 const R={
   pushdown:["Grip the rope/bar at a high cable, elbows pinned to your sides.","Push down until arms fully straight, spread the rope at the bottom.","Squeeze the triceps hard.","Return slowly — keep elbows still."],
   legraise:["Hang from a bar (or lie flat), legs straight.","Raise your legs/knees up, curling your pelvis.","Don't swing — control it.","Lower slowly, core braced."],
-  curl:["Elbows pinned to your sides.","Curl the weight up, squeeze the biceps.","Lower slowly under control.","No swinging or momentum."]
+  curl:["Elbows pinned to your sides.","Curl the weight up, squeeze the biceps.","Lower slowly under control.","No swinging or momentum."],
+  revcurl:["Grip the bar with palms facing down (overhand).","Curl up keeping wrists locked straight.","Squeeze the forearms/biceps at the top.","Lower slowly — this one builds forearm size fast."],
+  wristcurl:["Forearm on your thigh or a bench, palm up, weight in hand.","Curl your wrist up as far as it goes.","Squeeze at the top.","Lower slowly for a full stretch."],
+  revwristcurl:["Forearm on your thigh or a bench, palm down, weight in hand.","Lift your knuckles up as far as they go.","Squeeze at the top.","Lower slowly under control."]
 };
 function buildDefault(){return {
   mon:[
@@ -376,6 +391,78 @@ function buildDefault(){return {
     E("Full-Body Stretch",1,"10 min","bodyweight","generic",["Core"],["Gentle stretches for all major muscle groups.","Hold each stretch 20–30 seconds.","Improves flexibility and recovery.","Breathe and relax."]),
   ],
 };}
+
+/* ===== 4-Day Arms & Shoulders plan ===== */
+function restDayEx(){return [
+  E("Rest Day — Active Recovery",1,"optional","cardio","generic",["Fat-loss"],["Rest days are when your muscles actually grow — take it easy.","Optional: a 20–30 min easy walk or light cardio for fat loss.","Stretch, hydrate, and sleep well.","Still hit your protein target to rebuild."]),
+  E("Light Walk / Cardio",1,"20–30 min","cardio","generic",["Fat-loss"],["Easy-pace walk, cycle, or light cardio.","Keep it relaxed — it aids recovery and burns a little fat.","No need to push hard today.","Optional."]),
+  E("Full-Body Stretch",1,"10 min","bodyweight","generic",["Core"],["Gentle stretches for all major muscle groups.","Hold each stretch 20–30 seconds.","Improves flexibility and recovery.","Breathe and relax."]),
+];}
+function optionalCardioEx(){return [
+  E("HIIT / Incline Walk (optional)",1,"20–30 min","cardio","generic",["Fat-loss"],["Intervals (30s hard / 60s easy) or steady incline walk.","Keep moving, heart rate up.","Great optional fat-loss top-up.","Only if you have energy."]),
+  E("Plank",2,"45 sec","core","generic",["Core"],["Forearms on the floor, elbows under shoulders.","Body in one straight line — brace your abs.","Don't let hips sag or pike.","Breathe steadily and hold."]),
+];}
+const WORKOUT4_DEFS=[
+  {focus:'Shoulders & Abs',build:()=>[
+    E("Seated Dumbbell Shoulder Press",4,"10","compound","pressUp",["Shoulders","Triceps"],["Sit upright, dumbbells at shoulder height.","Press overhead until arms nearly straight.","Lower to ear level with control.","Don't arch your lower back."]),
+    E("Lateral Raise",4,"15","isolation","curlUp",["Side Delts"],["Dumbbells at your sides, slight elbow bend.","Raise out to the sides to shoulder height.","Lead with the elbows, pinkies slightly up.","Lower slowly — no swinging."]),
+    E("Front Raise",3,"12","isolation","curlUp",["Front Delts"],["Dumbbells in front of your thighs.","Raise straight in front to shoulder height.","Pause briefly at the top.","Lower with control."]),
+    E("Rear-Delt Fly",3,"15","isolation","curlUp",["Rear Delts"],["Bend forward at the hips, arms hanging, slight elbow bend.","Raise the dumbbells out to the sides.","Squeeze your rear delts/upper back.","Lower slowly."]),
+    E("Face Pull",3,"12","isolation","pressUp",["Rear Delts","Upper Back"],["Set a rope at face height, thumbs back.","Pull toward your face, elbows high and wide.","Squeeze the rear delts.","Return slowly."]),
+    E("Dumbbell Shrugs",3,"15","isolation","curlUp",["Traps"],["Hold dumbbells at your sides.","Shrug your shoulders straight up toward your ears.","Squeeze the traps at the top.","Lower fully."]),
+    E("Cable Crunch",3,"15","core","generic",["Abs"],["Kneel at a high cable, rope by your head.","Crunch down, rounding your spine.","Squeeze the abs at the bottom.","Return slowly, hips still."]),
+    E("Hanging Leg Raise",3,"12","core","generic",["Lower Abs"],R.legraise),
+    E("Incline Treadmill Walk",1,"10 min","cardio","generic",["Fat-loss"],["Set incline 8–12% at a brisk pace.","Stand tall, don't hold the rails.","Breathe harder / light sweat.","Finish your 10 minutes."]),
+  ]},
+  {focus:'Biceps & Forearms 💪',build:()=>[
+    E("Barbell Biceps Curl",4,"10","isolation","curlUp",["Biceps"],["Stand, grip the bar shoulder-width, elbows at sides.","Curl up and squeeze the biceps.","Lower slowly — don't swing.","Keep elbows pinned to your body."]),
+    E("Incline Dumbbell Curl",4,"12","isolation","curlUp",["Biceps"],["Sit back on a 45–60° incline, arms hanging.","Curl up without letting elbows drift forward.","Squeeze the biceps hard.","Lower to a full stretch."]),
+    E("Hammer Curl",4,"12","isolation","curlUp",["Biceps","Forearms"],["Hold dumbbells palms facing in (neutral grip).","Curl up keeping that neutral grip.","Squeeze at the top.","Lower slowly."]),
+    E("Preacher Curl",3,"12","isolation","curlUp",["Biceps"],["Arms over the preacher pad, full stretch at the bottom.","Curl up and squeeze at the top.","Lower slowly to nearly straight.","Don't bounce out of the bottom."]),
+    E("Concentration Curl",3,"12","isolation","curlUp",["Biceps"],["Seated, elbow braced on your inner thigh.","Curl the dumbbell up and squeeze hard.","Lower slowly to a full stretch.","No swinging."]),
+    E("Reverse Barbell Curl",3,"15","isolation","curlUp",["Forearms","Biceps"],R.revcurl),
+    E("Wrist Curl",3,"20","isolation","curlUp",["Forearms"],R.wristcurl),
+    E("Reverse Wrist Curl",3,"20","isolation","curlUp",["Forearms"],R.revwristcurl),
+    E("Plank",3,"45 sec","core","generic",["Core"],["Forearms on the floor, elbows under shoulders.","Body in one straight line — brace your abs.","Don't let hips sag or pike.","Breathe steadily and hold."]),
+  ]},
+  {focus:'Back & Triceps',build:()=>[
+    E("Lat Pulldown",4,"10","compound","pressUp",["Lats","Biceps"],["Grip the bar wider than shoulders, chest up.","Pull the bar to your upper chest, driving elbows down.","Squeeze your back at the bottom.","Return slowly to a full stretch."]),
+    E("Seated Cable Row",3,"12","compound","pressUp",["Back","Biceps"],["Sit tall, slight knee bend, grip the handle.","Pull to your stomach, elbows close.","Squeeze your shoulder blades together.","Extend your arms forward slowly."]),
+    E("One-Arm Dumbbell Row",3,"12","compound","pressUp",["Back","Biceps"],["One knee and hand on the bench, flat back.","Pull the dumbbell up to your hip.","Squeeze the lat at the top.","Lower under control, full stretch."]),
+    E("Triceps Rope Pushdown",4,"12","isolation","pressUp",["Triceps"],R.pushdown),
+    E("Overhead Dumbbell Extension",3,"12","isolation","pressUp",["Triceps"],["Hold one dumbbell overhead with both hands.","Lower it behind your head, elbows pointing up.","Extend back to the top.","Keep elbows close — don't flare."]),
+    E("Skull Crushers",3,"12","isolation","pressUp",["Triceps"],["Lie down, bar/dumbbells over your forehead, arms up.","Bend the elbows to lower toward your head.","Extend back up — keep elbows still.","Upper arms stay vertical."]),
+    E("Bench Dips",3,"to failure","bodyweight","pressUp",["Triceps"],["Hands on a bench behind you, legs out in front.","Bend your elbows to lower to ~90°.","Press back up to straight arms.","Keep your hips close to the bench."]),
+    E("Hanging Knee Raise",3,"12","core","generic",["Core"],R.legraise),
+    E("Incline Treadmill Walk",1,"10 min","cardio","generic",["Fat-loss"],["Incline 8–12%, brisk pace.","Tall posture, hands off rails.","Light sweat.","10 minutes done."]),
+  ]},
+  {focus:'Legs & Biceps',build:()=>[
+    E("Goblet Squat / Leg Press",4,"12","compound","pressUp",["Quads","Glutes"],["Hold a dumbbell at your chest (or use the leg press).","Squat down, knees tracking over toes.","Go at least to thigh-parallel.","Drive up through your heels."]),
+    E("Walking Lunges",3,"12 / leg","compound","pressUp",["Quads","Glutes"],["Step forward into a lunge, both knees ~90°.","Back knee close to the floor.","Push up and step through to the other leg.","Keep your torso upright."]),
+    E("Leg Extension",3,"15","isolation","pressUp",["Quads"],["Sit, shins behind the pad.","Extend your legs until straight.","Squeeze the quads at the top.","Lower slowly."]),
+    E("Leg Curl",3,"15","isolation","pressUp",["Hamstrings"],["Lie/sit on the machine, pad on lower legs.","Curl your heels toward your glutes.","Squeeze the hamstrings.","Return slowly."]),
+    E("Standing Calf Raise",4,"20","isolation","pressUp",["Calves"],["Balls of your feet on a step/platform.","Rise onto your toes as high as possible.","Squeeze the calves at the top.","Lower for a deep stretch."]),
+    E("Biceps Curl (pump)",3,"15","isolation","curlUp",["Biceps"],R.curl),
+    E("Hammer Curl (pump)",3,"12","isolation","curlUp",["Biceps","Forearms"],["Hold dumbbells palms facing in (neutral grip).","Curl up keeping that neutral grip.","Squeeze at the top.","Lower slowly."]),
+    E("Cardio — HIIT or fast walk",1,"15–20 min","cardio","generic",["Fat-loss"],["30s hard / 60s easy intervals, or a fast incline walk.","Keep your heart rate up.","Great fat-burning finisher.","15–20 minutes."]),
+  ]},
+];
+function build4Day(trainDays){
+  const td=(trainDays&&trainDays.length===4?trainDays:DEFAULT_TRAIN_DAYS).slice().sort((a,b)=>WEEKDAYS5.indexOf(a)-WEEKDAYS5.indexOf(b));
+  const plan={};let wi=0;
+  for(const d of WEEKDAYS5){plan[d]=td.includes(d)?WORKOUT4_DEFS[wi++].build():restDayEx();}
+  plan.sat=optionalCardioEx();plan.sun=restDayEx();
+  return plan;
+}
+function focus4Map(trainDays){
+  const td=(trainDays&&trainDays.length===4?trainDays:DEFAULT_TRAIN_DAYS).slice().sort((a,b)=>WEEKDAYS5.indexOf(a)-WEEKDAYS5.indexOf(b));
+  const map={};let wi=0;
+  for(const d of WEEKDAYS5){map[d]=td.includes(d)?WORKOUT4_DEFS[wi++].focus:'Rest / Recovery';}
+  map.sat='Optional · Light Cardio';map.sun='Rest / Active Recovery';
+  return map;
+}
+function focusMap(){return state.planMode==='4day'?focus4Map(state.trainDays):FOCUS;}
+function restDayKeys(){if(state.planMode==='4day')return WEEKDAYS5.filter(d=>!state.trainDays.includes(d)).concat(['sat','sun']);return ['sat','sun'];}
 
 /* fallback SVG (custom exercises with no photo) */
 const ANIM={
@@ -462,7 +549,7 @@ function weekRange(d){const m=mondayOf(d),s=new Date(m),e=new Date(m);e.setDate(
 function dateStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function todayKey(){const i=(new Date().getDay()+6)%7;return DAYS[i]||'mon';}
 function defInc(t){return (t==='compound'||t==='isolation')?2.5:0;}
-function getBW(){if(state.bw&&state.bw.length)return state.bw[state.bw.length-1].kg;return (state.profile&&state.profile.bodyWeight)||68;}
+function getBW(){if(state.bw&&state.bw.length)return state.bw[state.bw.length-1].kg;if(state.profile&&state.profile.bodyWeight)return state.profile.bodyWeight;return 70;}
 
 let state;
 function ensureEx(s){s.ex=s.ex||{};for(const d of DAYS)for(const e of (s.plan[d]||[]))if(!s.ex[e.id])s.ex[e.id]={weight:null,inc:defInc(e.type),unit:'kg',loggedThisWeek:false,hitReps:false,suggestion:null,history:[]};}
@@ -474,8 +561,8 @@ function rollWeek(s){const now=weekKey(new Date());
       x.loggedThisWeek=false;x.hitReps=false;}
     s.checks={};s.weekStart=now;}}
 function load(){
-  try{const raw=localStorage.getItem(KEY);if(raw){const s=JSON.parse(raw);s.plan=s.plan||buildDefault();s.bw=s.bw||[];s.calLog=s.calLog||{};s.profile=s.profile||{height:170,bodyWeight:68};ensureEx(s);ensureNutri(s);rollWeek(s);return s;}}catch(e){console.warn(e);}
-  const s={plan:buildDefault(),ex:{},checks:{},bw:[],calLog:{},profile:{height:170,bodyWeight:68},weekStart:weekKey(new Date())};ensureEx(s);ensureNutri(s);return s;}
+  try{const raw=localStorage.getItem(KEY);if(raw){const s=JSON.parse(raw);s.plan=s.plan||buildDefault();s.bw=s.bw||[];s.calLog=s.calLog||{};s.profile=s.profile||{height:null,bodyWeight:null};s.planMode=s.planMode||'5day';s.trainDays=(s.trainDays&&s.trainDays.length===4)?s.trainDays:DEFAULT_TRAIN_DAYS.slice();ensureEx(s);ensureNutri(s);rollWeek(s);return s;}}catch(e){console.warn(e);}
+  const s={plan:buildDefault(),ex:{},checks:{},bw:[],calLog:{},profile:{height:null,bodyWeight:null},planMode:'5day',trainDays:DEFAULT_TRAIN_DAYS.slice(),weekStart:weekKey(new Date())};ensureEx(s);ensureNutri(s);return s;}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){toast('⚠ Could not save');}}
 
 /* ===== calories ===== */
@@ -492,14 +579,14 @@ const $=s=>document.querySelector(s);
 function esc(t){return String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function nameOf(id){for(const d of DAYS){const e=(state.plan[d]||[]).find(e=>e.id===id);if(e)return e.name;}return id;}
 function render(){$('#weeklbl').textContent='Week of '+weekRange(new Date());renderTabs();renderSummary();renderList();}
-function renderTabs(){$('#tabs').innerHTML=DAYS.map(d=>{const opt=(d==='sat'||d==='sun')?'<div class="opt">optional</div>':'';
-  return `<div class="tab ${d===activeDay?'active':''} ${d===todayKey()?'today':''}" data-day="${d}"><div class="d">${DLABEL[d]}</div><div class="n">${FOCUS[d].split(' ')[0]}</div>${opt}</div>`;}).join('');}
+function renderTabs(){const fm=focusMap(),rest=restDayKeys();$('#tabs').innerHTML=DAYS.map(d=>{const opt=rest.includes(d)?'<div class="opt">optional</div>':'';
+  return `<div class="tab ${d===activeDay?'active':''} ${d===todayKey()?'today':''}" data-day="${d}"><div class="d">${DLABEL[d]}</div><div class="n">${fm[d].split(' ')[0]}</div>${opt}</div>`;}).join('');}
 function dayDone(d){const list=state.plan[d]||[],chk=state.checks[d]||{};return{done:list.filter(e=>chk[e.id]).length,total:list.length};}
 function renderSummary(){const{done,total}=dayDone(activeDay),pct=total?Math.round(done/total*100):0;
   const chk=state.checks[activeDay]||{},kcal=(state.plan[activeDay]||[]).filter(e=>chk[e.id]).reduce((a,e)=>a+estCal(e),0);
   const tnote=activeDay===todayKey()?' · Today':'';
   $('#summary').innerHTML=`<div class="scard"><div class="ring" style="--p:${pct}"><span>${pct}%</span></div>
-    <div style="flex:1"><div class="focus">${esc(FOCUS[activeDay])}</div>
+    <div style="flex:1"><div class="focus">${esc(focusMap()[activeDay])}</div>
     <div class="focusub">${FULLDAY[activeDay]}${tnote} · ${done}/${total} done · <span class="kcalbadge">🔥 ${kcal} kcal</span></div></div></div>`;}
 function renderList(){
   const list=state.plan[activeDay]||[],chk=state.checks[activeDay]||{};
@@ -579,7 +666,7 @@ function openForm(i){
   const e=editing?state.plan[activeDay][i]:{name:'',sets:3,reps:'12',type:'isolation',anim:'curlUp',muscles:[],steps:[]};
   $('#formBody').innerHTML=`<div class="dtitle">${editing?'Edit exercise':'Add exercise'}</div>
     <div class="field"><span class="lbl">Exercise name</span><input id="fName" value="${esc(e.name)}" placeholder="e.g. Cable Curl"></div>
-    <div class="field"><span class="lbl">Day</span><select id="fDay">${DAYS.map(d=>`<option value="${d}" ${d===activeDay?'selected':''}>${FULLDAY[d]} — ${FOCUS[d]}</option>`).join('')}</select></div>
+    <div class="field"><span class="lbl">Day</span><select id="fDay">${DAYS.map(d=>`<option value="${d}" ${d===activeDay?'selected':''}>${FULLDAY[d]} — ${focusMap()[d]}</option>`).join('')}</select></div>
     <div class="wrow" style="margin-top:12px"><div class="wfield"><span class="lbl">Sets</span><input id="fSets" type="number" min="1" value="${e.sets}"></div>
       <div class="wfield"><span class="lbl">Reps / time</span><input id="fReps" value="${esc(e.reps)}" placeholder="12 or 45 sec"></div></div>
     <div class="field"><span class="lbl">Type (controls weight + calories)</span><select id="fType">${['compound','isolation','bodyweight','core','cardio'].map(t=>`<option ${t===e.type?'selected':''}>${t}</option>`).join('')}</select></div>
@@ -603,8 +690,11 @@ function openForm(i){
 
 /* ===== stats ===== */
 function renderStats(){
-  const bw=getBW(),h=(state.profile&&state.profile.height||170)/100,bmi=h?bw/(h*h):0;
-  const h2=h*h,loW=+(18.5*h2).toFixed(1),hiW=+(24.9*h2).toFixed(1);
+  const bwSet=!!((state.bw&&state.bw.length)||(state.profile&&state.profile.bodyWeight!=null));
+  const bw=getBW();
+  const htSet=!!(state.profile&&state.profile.height);
+  const h=(htSet?state.profile.height:0)/100,bmi=(htSet&&bwSet)?bw/(h*h):0;
+  const h2=h*h,loW=htSet?+(18.5*h2).toFixed(1):0,hiW=htSet?+(24.9*h2).toFixed(1):0;
   const goal=state.goal||(state.goal={targetWeight:null,ratePerWeek:0.5,startWeight:null,startDate:null});
   let goalHtml;
   if(goal.targetWeight){const dir=bw>goal.targetWeight?'lose':'gain',remain=Math.abs(bw-goal.targetWeight),weeks=Math.max(1,Math.ceil(remain/goal.ratePerWeek));let pace='';
@@ -612,7 +702,8 @@ function renderStats(){
       pace=`<div class="phelp" style="margin-top:10px;background:linear-gradient(135deg,rgba(255,106,61,.16),rgba(255,77,109,.12));border-color:rgba(255,106,61,.35);color:#f3dcd2">Ideal by today: <b>${ideal.toFixed(1)}kg</b> · You: <b>${bw}kg</b> → ${onTrack?'✅ On track!':(dir==='lose'?(diff>0?'a bit behind — hold the deficit + protein':'ahead of schedule 🚀'):(diff<0?'a bit behind — eat a little more':'ahead 🚀'))}</div>`;}
     const totalSpan=goal.startWeight!=null?Math.abs(goal.startWeight-goal.targetWeight):remain,doneSpan=goal.startWeight!=null?Math.abs(goal.startWeight-bw):0,pct=Math.max(0,Math.min(100,Math.round(doneSpan/Math.max(0.1,totalSpan)*100)));
     goalHtml=`<div class="netline" style="text-align:left;margin:0 0 8px">🎯 Target <b>${goal.targetWeight}kg</b> · ${dir} <b>${remain.toFixed(1)}kg</b> · ~${weeks} wks (≈${(goal.ratePerWeek*4).toFixed(1)}kg/mo)</div><div class="nbar" style="background:var(--card2)"><div class="nbar-fill" style="width:${pct}%;background:linear-gradient(90deg,#ff6a3d,#ff4d6d)"></div></div>${pace}<button class="btn ghost" id="goalEdit" style="margin-top:10px">✎ Change goal</button>`;
-  }else{const sugg=bw>hiW?Math.round(hiW-1):Math.max(loW,Math.round(bw-3));goalHtml=`<p class="muted">Set a target weight to track ideal monthly progress. Safe pace: <b>0.5 kg/week (~2 kg/month)</b>.</p><div class="wrow" style="margin-top:8px"><div class="wfield"><span class="lbl">Target weight (kg)</span><input id="goalInput" type="number" step="0.5" value="${sugg}"></div><button class="btn primary" id="goalSet" style="margin-top:0;flex:0 0 auto;width:auto;padding:13px 18px">Set</button></div>`;}
+  }else if(bwSet){const sugg=htSet?(bw>hiW?Math.round(hiW-1):Math.max(loW,Math.round(bw-3))):Math.round(bw-3);goalHtml=`<p class="muted">Set a target weight to track ideal monthly progress. Safe pace: <b>0.5 kg/week (~2 kg/month)</b>.</p><div class="wrow" style="margin-top:8px"><div class="wfield"><span class="lbl">Target weight (kg)</span><input id="goalInput" type="number" step="0.5" value="${sugg}"></div><button class="btn primary" id="goalSet" style="margin-top:0;flex:0 0 auto;width:auto;padding:13px 18px">Set</button></div>`;
+  }else{goalHtml=`<p class="muted">Log your weight above first, then you can set a target to track progress.</p>`;}
   const bwData=(state.bw||[]).map(b=>({label:b.date.slice(5),v:b.kg}));
   const trend=(state.bw&&state.bw.length>1)?+(state.bw[state.bw.length-1].kg-state.bw[0].kg).toFixed(1):0;
   const last7=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const ds=dateStr(d);last7.push({label:d.toLocaleDateString(undefined,{weekday:'short'}).slice(0,2),v:Math.round((state.calLog&&state.calLog[ds])||0)});}
@@ -622,18 +713,18 @@ function renderStats(){
   const bmiCat=bmi<18.5?'underweight':bmi<25?'healthy':bmi<30?'overweight':'high';
   $('#statsBody').innerHTML=`<div class="dtitle">Your Progress</div>
     <div class="sectlbl">Body weight</div>
-    <div style="display:flex;align-items:flex-end;gap:12px"><div class="bignum">${bw}<small>kg</small></div>
+    <div style="display:flex;align-items:flex-end;gap:12px"><div class="bignum">${bwSet?bw:'—'}<small>kg</small></div>
       ${trend?`<span class="trend ${trend<0?'down':'up'}">${trend<0?'▼':'▲'} ${Math.abs(trend)}kg</span>`:''}
-      <span class="muted" style="margin-left:auto">BMI ${bmi.toFixed(1)} · ${bmiCat}</span></div>
+      <span class="muted" style="margin-left:auto">${(htSet&&bwSet)?`BMI ${bmi.toFixed(1)} · ${bmiCat}`:'Add height & weight for BMI'}</span></div>
     ${lineChart(bwData,'kg')}
-    <div class="wrow" style="margin-top:10px"><div class="wfield"><span class="lbl">Log today's weight (kg)</span><input id="bwInput" type="number" inputmode="decimal" step="0.1" placeholder="${bw}"></div>
+    <div class="wrow" style="margin-top:10px"><div class="wfield"><span class="lbl">Log today's weight (kg)</span><input id="bwInput" type="number" inputmode="decimal" step="0.1" placeholder="${bwSet?bw:'e.g. 68'}"></div>
       <button class="btn primary" id="bwSave" style="margin-top:0;flex:0 0 auto;width:auto;padding:13px 18px">Log</button></div>
-    <div class="field"><span class="lbl">Your height (cm) — for BMI</span><input id="htInput" type="number" value="${state.profile&&state.profile.height||170}"></div>
+    <div class="field"><span class="lbl">Your height (cm) — for BMI</span><input id="htInput" type="number" value="${htSet?state.profile.height:''}" placeholder="e.g. 170"></div>
     <div class="sectlbl">Calories burned — last 7 days</div>
     <div class="bignum" style="font-size:26px">${weekCal}<small> kcal this week</small></div>
     ${barChart(last7)}
     <div class="sectlbl">Monthly goal</div>
-    <div class="muted" style="margin-bottom:8px">Healthy range for ${Math.round(h*100)}cm: <b>${loW}–${hiW} kg</b> (BMI 18.5–24.9). Now <b>${bw}kg</b> · BMI ${bmi.toFixed(1)}.</div>
+    <div class="muted" style="margin-bottom:8px">${htSet?`Healthy range for ${Math.round(h*100)}cm: <b>${loW}–${hiW} kg</b> (BMI 18.5–24.9). ${bwSet?`Now <b>${bw}kg</b> · BMI ${bmi.toFixed(1)}.`:''}`:'Add your height above to see your healthy weight range & BMI.'}</div>
     ${goalHtml}
     <div class="sectlbl">Strongest lifts</div>
     ${lifts.length?lifts.slice(0,8).map(l=>`<div class="liftrow"><span>${esc(l.name)}</span><b>${l.w} kg</b></div>`).join(''):'<div class="muted center">Log some weights to see your top lifts.</div>'}`;
@@ -646,10 +737,19 @@ function renderStats(){
 }
 
 /* ===== sheets / events ===== */
-function openSheet(sel){$('#scrim').classList.add('show');$(sel).classList.add('show');}
-function closeSheets(){stopDemo();$('#scrim').classList.remove('show');document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('show'));}
-$('#scrim').addEventListener('click',closeSheets);
-document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',closeSheets));
+/* back-button handling: close a sheet, then go to the Workout tab, before actually leaving the app */
+let navLevel=0;
+function desiredNavLevel(){return (activeView!=='workout'?1:0)+(document.querySelector('.sheet.show')?1:0);}
+function syncNav(fromPop){const desired=desiredNavLevel();
+  if(desired>navLevel){history.pushState({gtLvl:desired},'');navLevel=desired;}
+  else if(desired<navLevel){navLevel=desired;if(!fromPop)history.back();}}
+window.addEventListener('popstate',()=>{navLevel=Math.max(0,navLevel-1);
+  if(document.querySelector('.sheet.show'))closeSheets(true);
+  else if(activeView!=='workout')setView('workout',true);});
+function openSheet(sel){$('#scrim').classList.add('show');$(sel).classList.add('show');syncNav(false);}
+function closeSheets(fromPop){stopDemo();$('#scrim').classList.remove('show');document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('show'));syncNav(fromPop);}
+$('#scrim').addEventListener('click',()=>closeSheets());
+document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>closeSheets()));
 $('#tabs').addEventListener('click',ev=>{const t=ev.target.closest('[data-day]');if(t){activeDay=t.dataset.day;render();}});
 $('#list').addEventListener('click',ev=>{const t=ev.target;
   const check=t.closest('[data-check]');
@@ -675,13 +775,33 @@ $('#addBtn').addEventListener('click',()=>openForm(null));
 $('#editToggle').addEventListener('click',()=>{document.body.classList.toggle('editing');$('#editToggle').classList.toggle('on',document.body.classList.contains('editing'));
   toast(document.body.classList.contains('editing')?'Edit mode: reorder / edit / delete':'Done editing');});
 $('#statsBtn').addEventListener('click',()=>{renderStats();openSheet('#statsSheet');});
-$('#gearBtn').addEventListener('click',()=>openSheet('#settingsSheet'));
+$('#gearBtn').addEventListener('click',()=>{renderModeUI();openSheet('#settingsSheet');});
+function renderModeUI(){const is4=state.planMode==='4day';
+  $('#mode5Btn').classList.toggle('primary',!is4);$('#mode5Btn').classList.toggle('ghost',is4);
+  $('#mode4Btn').classList.toggle('primary',is4);$('#mode4Btn').classList.toggle('ghost',!is4);
+  $('#modeDesc').textContent=is4?'4-Day Arms & Shoulders Focus — priority order: Biceps & Forearms, Shoulders, Back & Triceps, Legs & Biceps (extra bicep pump). Chest work is dropped and cardio finishers are built in to help lose chest/belly fat.':'5-Day Full Split — Chest, Back+Biceps, Shoulders+Abs, Arms+Abs, Legs.';
+  $('#dayPickerWrap').style.display=is4?'block':'none';
+  renderDayPicker();}
+function renderDayPicker(){$('#dayPicker').innerHTML=WEEKDAYS5.map(d=>`<button type="button" class="daychip ${state.trainDays.includes(d)?'sel':''}" data-tday="${d}">${DLABEL[d]}</button>`).join('');}
+$('#dayPicker').addEventListener('click',ev=>{const b=ev.target.closest('[data-tday]');if(!b)return;const d=b.dataset.tday;
+  let td=state.trainDays.slice();
+  if(td.includes(d)){if(td.length<=1){toast('Pick at least 1 day');return;}td=td.filter(x=>x!==d);}
+  else{if(td.length>=4){toast('Pick exactly 4 — tap one to remove first');return;}td.push(d);}
+  state.trainDays=td;renderDayPicker();
+  if(td.length===4){state.plan=build4Day(state.trainDays);ensureEx(state);state.checks={};save();render();toast('Days updated 💪');}});
+$('#mode5Btn').addEventListener('click',()=>{if(state.planMode==='5day')return;
+  if(!confirm('Switch to the 5-Day Full Split? Your day layout will change (weights & history are kept).'))return;
+  state.planMode='5day';state.plan=buildDefault();ensureEx(state);state.checks={};save();render();renderModeUI();toast('5-Day plan restored');});
+$('#mode4Btn').addEventListener('click',()=>{if(state.planMode==='4day')return;
+  if(!confirm('Switch to the 4-Day Arms & Shoulders plan? Pick your 4 gym days below. Your day layout will change (weights & history are kept).'))return;
+  state.planMode='4day';if(!state.trainDays||state.trainDays.length!==4)state.trainDays=DEFAULT_TRAIN_DAYS.slice();
+  state.plan=build4Day(state.trainDays);ensureEx(state);state.checks={};save();render();renderModeUI();toast('4-Day plan activated 💪');});
 $('#resetWeekBtn').addEventListener('click',()=>{if(confirm('Clear all checkmarks for this week?')){state.checks={};save();render();closeSheets();toast('Week reset');}});
 $('#exportBtn').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='gymtrack-backup-'+weekKey(new Date())+'.json';a.click();toast('Backup downloaded');});
 $('#importBtn').addEventListener('click',()=>$('#importFile').click());
 $('#importFile').addEventListener('change',ev=>{const f=ev.target.files[0];if(!f)return;const r=new FileReader();
-  r.onload=()=>{try{const s=JSON.parse(r.result);s.plan=s.plan||buildDefault();s.bw=s.bw||[];s.calLog=s.calLog||{};s.profile=s.profile||{height:170,bodyWeight:68};ensureEx(s);ensureNutri(s);state=s;save();render();closeSheets();toast('Backup restored ✅');}catch(e){toast('⚠ Invalid file');}};r.readAsText(f);});
-$('#restoreBtn').addEventListener('click',()=>{if(confirm('Restore the original workout plan? Your saved weights & history stay.')){state.plan=buildDefault();ensureEx(state);state.checks={};save();render();closeSheets();toast('Default plan restored');}});
+  r.onload=()=>{try{const s=JSON.parse(r.result);s.plan=s.plan||buildDefault();s.bw=s.bw||[];s.calLog=s.calLog||{};s.profile=s.profile||{height:null,bodyWeight:null};s.planMode=s.planMode||'5day';s.trainDays=(s.trainDays&&s.trainDays.length===4)?s.trainDays:DEFAULT_TRAIN_DAYS.slice();ensureEx(s);ensureNutri(s);state=s;save();render();closeSheets();toast('Backup restored ✅');}catch(e){toast('⚠ Invalid file');}};r.readAsText(f);});
+$('#restoreBtn').addEventListener('click',()=>{if(confirm('Restore the original 5-Day workout plan? Your saved weights & history stay.')){state.planMode='5day';state.plan=buildDefault();ensureEx(state);state.checks={};save();render();renderModeUI();closeSheets();toast('Default plan restored');}});
 $('#wipeBtn').addEventListener('click',()=>{if(confirm('Erase EVERYTHING? This cannot be undone.')){localStorage.removeItem(KEY);state=load();render();closeSheets();toast('Erased');}});
 let toastT;function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),1800);}
 /* ===================== NUTRITION ===================== */
@@ -871,13 +991,14 @@ function openNutriSet(){const n=state.nutri;const mode=n.calTargetOverride!=null
     if(g==='custom')n.calTargetOverride=Math.round(+$('#nsCustom').value||0);else{n.calTargetOverride=null;n.calPerKg=g==='lose'?28:g==='maintain'?35:30;}
     save();renderFood();closeOne('#nutriSetSheet');toast('Targets updated');};
 }
-function closeOne(sel){$(sel).classList.remove('show');const any=[...document.querySelectorAll('.sheet')].some(s=>s.classList.contains('show'));if(!any)$('#scrim').classList.remove('show');}
-function setView(v){activeView=v;document.body.classList.remove('editing');$('#editToggle').classList.remove('on');
+function closeOne(sel){$(sel).classList.remove('show');const any=[...document.querySelectorAll('.sheet')].some(s=>s.classList.contains('show'));if(!any)$('#scrim').classList.remove('show');syncNav();}
+function setView(v,fromPop){activeView=v;document.body.classList.remove('editing');$('#editToggle').classList.remove('on');
   document.querySelectorAll('#bottomnav button').forEach(x=>x.classList.toggle('active',x.dataset.view===v));
   $('#workoutView').style.display=v==='workout'?'':'none';$('#foodView').style.display=v==='food'?'':'none';$('#muscleView').style.display=v==='muscles'?'':'none';$('#historyView').style.display=v==='history'?'':'none';
   $('#editToggle').style.display=v==='workout'?'':'none';
   document.body.classList.toggle('foodactive',v==='food');
-  if(v==='food'){selDate=dateStr(new Date());renderFood();}if(v==='muscles')renderMuscles();if(v==='history')renderHistory();}
+  if(v==='food'){selDate=dateStr(new Date());renderFood();}if(v==='muscles')renderMuscles();if(v==='history')renderHistory();
+  syncNav(fromPop);}
 $('#bottomnav').addEventListener('click',ev=>{const b=ev.target.closest('[data-view]');if(b)setView(b.dataset.view);});
 $('#foodView').addEventListener('click',ev=>{const t=ev.target;
   if(t.closest('[data-prevday]'))return shiftDate(-1);
@@ -970,7 +1091,7 @@ function renderLibrary(){
      <button class="libadd ${already?'added':''}" data-libadd="${x.id}">${already?'✓':'＋'}</button></div>`;}).join('');
   $('#libraryBody').innerHTML=`<div class="dtitle">Exercise library</div>
     <p class="muted" style="margin:6px 0 10px">Extra ${libGroups.join(' / ')} moves. Tap one to preview, or ＋ to add. ⭐ = recommended for you.</p>
-    <div class="field"><span class="lbl">Add to which day?</span><select id="libDay">${DAYS.map(d=>`<option value="${d}" ${d===libTargetDay?'selected':''}>${FULLDAY[d]} — ${FOCUS[d]}</option>`).join('')}</select></div>
+    <div class="field"><span class="lbl">Add to which day?</span><select id="libDay">${DAYS.map(d=>`<option value="${d}" ${d===libTargetDay?'selected':''}>${FULLDAY[d]} — ${focusMap()[d]}</option>`).join('')}</select></div>
     <div class="list" style="padding:12px 0 0">${rows||'<div class="center">No library exercises here.</div>'}</div><div style="height:14px"></div>`;
   if($('#libDay'))$('#libDay').addEventListener('change',()=>{libTargetDay=$('#libDay').value;renderLibrary();});
 }
@@ -986,7 +1107,7 @@ function openLibDetail(libId){const x=EXLIB.find(e=>e.id===libId);if(!x)return;c
     <div class="musclewrap" style="margin-top:10px">${bodyMap(x.muscles)}<div class="mlegend"><span><i class="dotleg" style="background:#ff6a3d"></i>Primary</span><span><i class="dotleg" style="background:#9c5a3c"></i>Secondary</span></div></div>
     <div class="sectlbl">How to do it</div><ol class="steps">${(x.steps||[]).map(s=>`<li>${esc(s)}</li>`).join('')}</ol>
     <button class="btn vid" id="libVid">▶ Watch video demo</button>
-    <div class="field"><span class="lbl">Add to which day?</span><select id="libDetDay">${DAYS.map(d=>`<option value="${d}" ${d===libTargetDay?'selected':''}>${FULLDAY[d]} — ${FOCUS[d]}</option>`).join('')}</select></div>
+    <div class="field"><span class="lbl">Add to which day?</span><select id="libDetDay">${DAYS.map(d=>`<option value="${d}" ${d===libTargetDay?'selected':''}>${FULLDAY[d]} — ${focusMap()[d]}</option>`).join('')}</select></div>
     <button class="btn primary" id="libAddBtn">＋ Add to my plan</button>`;
   openSheet('#libDetailSheet');startDemo(im);
   $('#libVid').onclick=()=>window.open('https://www.youtube.com/results?search_query='+encodeURIComponent(x.name+' exercise form'),'_blank');
