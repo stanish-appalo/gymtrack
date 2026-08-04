@@ -1,5 +1,5 @@
 // GymTrack service worker — offline support (only caches successful responses)
-const CACHE = 'gymtrack-v2';
+const CACHE = 'gymtrack-v3';
 const CORE = ['./', 'index.html', 'manifest.webmanifest', 'assets/exmap.js', 'assets/library.js', 'assets/icon-192.png', 'assets/icon-512.png', 'assets/icon-180.png'];
 
 self.addEventListener('install', e => {
