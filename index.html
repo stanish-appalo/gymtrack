@@ -10,7 +10,7 @@
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="apple-touch-icon" href="assets/icon-180.png" />
 <link rel="icon" type="image/png" href="assets/icon-192.png" />
-<title>GymTrack — Personal Workout</title>
+<title>GymTrack: Personal Workout</title>
 <style>
   :root{
     --bg:#0f1115; --bg2:#15171c; --card:#1b1e25; --card2:#22262f;
@@ -45,6 +45,12 @@
   .tab.today::after{content:"";position:absolute;top:6px;right:7px;width:6px;height:6px;border-radius:50%;background:var(--ok)}
   .tab .opt{font-size:8px;color:var(--acc2)}
   .tab.active .opt{color:#fff}
+  .parts{padding:12px 16px 0}
+  .partlbl{font-size:11px;font-weight:800;letter-spacing:.8px;color:var(--mut2);text-transform:uppercase;margin-bottom:8px}
+  .pchips{display:flex;flex-wrap:wrap;gap:7px}
+  .pchip{padding:8px 12px;border-radius:20px;border:1px solid var(--line);background:var(--card);color:var(--mut);font-weight:800;font-size:12.5px;cursor:pointer;font-family:inherit;transition:.15s}
+  .pchip:active{transform:scale(.96)}
+  .pchip.on{background:var(--grad);color:#fff;border-color:transparent}
   .summary{padding:14px 16px 4px}
   .scard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;gap:14px}
   .focus{font-weight:800;font-size:16px}
@@ -229,7 +235,7 @@
       <div class="logo">🔥</div>
       <div>
         <div class="htitle">GymTrack</div>
-        <div class="hsub" id="weeklbl">Week of —</div>
+        <div class="hsub" id="weeklbl">Week of -</div>
       </div>
       <div class="hbtns">
         <button class="iconbtn" id="editToggle" title="Edit exercises">✎</button>
@@ -240,10 +246,11 @@
   </header>
   <div id="workoutView">
     <nav class="tabs" id="tabs"></nav>
+    <section class="parts" id="parts"></section>
     <section class="summary" id="summary"></section>
     <section class="list" id="list"></section>
     <button class="addbtn" id="addBtn">＋ Add exercise to this day</button>
-  <button class="addbtn" id="browseBtn" style="border-color:rgba(255,255,255,.04);color:var(--acc2)">🔎 Browse more exercises for today's muscles</button>
+  <button class="addbtn" id="browseBtn" style="border-color:rgba(255,255,255,.04);color:var(--acc2)">🔎 Browse more exercises for this day's muscles</button>
   </div>
   <div id="foodView" class="nutri" style="display:none"></div>
   <div id="muscleView" style="display:none"></div>
@@ -267,8 +274,8 @@
   <div class="dtitle">Settings & Tips</div>
   <div class="info" style="margin-top:14px">
     <h4>🔥 How to actually lose belly & chest fat</h4>
-    <p class="muted">You can't burn fat from one spot by training it — fat leaves your whole body when you eat slightly less than you burn. Do this:</p>
-    <p class="muted">• Eat ~300–400 kcal under maintenance.<br>• Protein ~110 g/day (chicken, eggs, fish, dairy, legumes).<br>• Keep the cardio finishers.<br>• Lift heavy (this app) to build the shape underneath.<br>• 7–8 h sleep, 8k+ steps/day.</p>
+    <p class="muted">You can't burn fat from one spot by training it. Fat leaves your whole body when you eat slightly less than you burn. Do this:</p>
+    <p class="muted">• Eat ~300 to 400 kcal under maintenance.<br>• Protein ~110 g/day (chicken, eggs, fish, dairy, legumes).<br>• Keep the cardio finishers.<br>• Lift heavy (this app) to build the shape underneath.<br>• 7 to 8 h sleep, 8k+ steps/day.</p>
   </div>
   <div class="sectlbl">Workout Split</div>
   <p class="muted" id="modeDesc" style="margin:0 0 10px"></p>
@@ -276,7 +283,7 @@
   <div id="dayPickerWrap" style="display:none;margin-top:14px">
     <span class="lbl">Pick your 4 gym days</span>
     <div id="dayPicker" style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"></div>
-    <p class="muted" style="margin-top:8px">Tap to select/deselect — pick exactly 4. The 5th weekday becomes a rest day; Sat/Sun stay optional/rest.</p>
+    <p class="muted" style="margin-top:8px">Tap to select/deselect. Pick exactly 4. The 5th weekday becomes a rest day; Sat/Sun stay optional/rest.</p>
   </div>
   <div class="sectlbl">Progress</div>
   <button class="btn ghost" id="resetWeekBtn">↻ Reset this week's checkmarks</button>
@@ -311,7 +318,6 @@ const WEEKDAYS5=['mon','tue','wed','thu','fri'];
 const DEFAULT_TRAIN_DAYS=['mon','tue','thu','fri'];
 const DLABEL={mon:'Mon',tue:'Tue',wed:'Wed',thu:'Thu',fri:'Fri',sat:'Sat',sun:'Sun'};
 const FULLDAY={mon:'Monday',tue:'Tuesday',wed:'Wednesday',thu:'Thursday',fri:'Friday',sat:'Saturday',sun:'Sunday'};
-const FOCUS={mon:'Chest & Triceps',tue:'Back & Biceps',wed:'Shoulders & Abs',thu:'Arms & Abs',fri:'Legs & Core',sat:'Optional · Cardio + Pump',sun:'Rest / Active Recovery'};
 const ANIMS=['pressUp','curlUp','generic'];
 
 let _id=0;
@@ -320,10 +326,10 @@ function E(name,sets,reps,type,anim,muscles,steps){
   return {id:slug,name,sets,reps,type,anim,muscles,steps};
 }
 const R={
-  pushdown:["Grip the rope/bar at a high cable, elbows pinned to your sides.","Push down until arms fully straight, spread the rope at the bottom.","Squeeze the triceps hard.","Return slowly — keep elbows still."],
-  legraise:["Hang from a bar (or lie flat), legs straight.","Raise your legs/knees up, curling your pelvis.","Don't swing — control it.","Lower slowly, core braced."],
+  pushdown:["Grip the rope/bar at a high cable, elbows pinned to your sides.","Push down until arms fully straight, spread the rope at the bottom.","Squeeze the triceps hard.","Return slowly, keep elbows still."],
+  legraise:["Hang from a bar (or lie flat), legs straight.","Raise your legs/knees up, curling your pelvis.","Don't swing, control it.","Lower slowly, core braced."],
   curl:["Elbows pinned to your sides.","Curl the weight up, squeeze the biceps.","Lower slowly under control.","No swinging or momentum."],
-  revcurl:["Grip the bar with palms facing down (overhand).","Curl up keeping wrists locked straight.","Squeeze the forearms/biceps at the top.","Lower slowly — this one builds forearm size fast."],
+  revcurl:["Grip the bar with palms facing down (overhand).","Curl up keeping wrists locked straight.","Squeeze the forearms/biceps at the top.","Lower slowly, this one builds forearm size fast."],
   wristcurl:["Forearm on your thigh or a bench, palm up, weight in hand.","Curl your wrist up as far as it goes.","Squeeze at the top.","Lower slowly for a full stretch."],
   revwristcurl:["Forearm on your thigh or a bench, palm down, weight in hand.","Lift your knuckles up as far as they go.","Squeeze at the top.","Lower slowly under control."]
 };
@@ -334,29 +340,29 @@ function buildDefault(){return {
     E("Incline Dumbbell Press",3,"12","compound","pressUp",["Upper Chest","Shoulders"],["Set the bench to about 30°.","Press the dumbbells up and slightly together.","Lower to upper-chest level with control.","Keep your back on the bench."]),
     E("Cable / Pec-Deck Fly",3,"15","isolation","pressUp",["Chest"],["Slight bend in the elbows, arms out wide.","Bring the handles together in front of your chest in an arc.","Squeeze the chest in the middle.","Return slowly into the stretch."]),
     E("Triceps Rope Pushdown",3,"12","isolation","pressUp",["Triceps"],R.pushdown),
-    E("Overhead Dumbbell Extension",3,"12","isolation","pressUp",["Triceps"],["Hold one dumbbell overhead with both hands.","Lower it behind your head, elbows pointing up.","Extend back to the top.","Keep elbows close — don't flare."]),
+    E("Overhead Dumbbell Extension",3,"12","isolation","pressUp",["Triceps"],["Hold one dumbbell overhead with both hands.","Lower it behind your head, elbows pointing up.","Extend back to the top.","Keep elbows close, don't flare."]),
     E("Bench Dips",3,"to failure","bodyweight","pressUp",["Triceps"],["Hands on a bench behind you, legs out in front.","Bend your elbows to lower to ~90°.","Press back up to straight arms.","Keep your hips close to the bench."]),
-    E("Plank",3,"45 sec","core","generic",["Core"],["Forearms on the floor, elbows under shoulders.","Body in one straight line — brace your abs.","Don't let hips sag or pike.","Breathe steadily and hold."]),
-    E("Incline Treadmill Walk",1,"10 min","cardio","generic",["Fat-loss"],["Set incline 8–12% at a brisk pace.","Stand tall, don't hold the rails.","Breathe harder / light sweat.","Finish your 10 minutes."]),
+    E("Plank",3,"45 sec","core","generic",["Core"],["Forearms on the floor, elbows under shoulders.","Body in one straight line, brace your abs.","Don't let hips sag or pike.","Breathe steadily and hold."]),
+    E("Incline Treadmill Walk",1,"10 min","cardio","generic",["Fat-loss"],["Set incline 8 to 12% at a brisk pace.","Stand tall, don't hold the rails.","Breathe harder / light sweat.","Finish your 10 minutes."]),
   ],
   tue:[
     E("Lat Pulldown",4,"10","compound","pressUp",["Lats","Biceps"],["Grip the bar wider than shoulders, chest up.","Pull the bar to your upper chest, driving elbows down.","Squeeze your back at the bottom.","Return slowly to a full stretch."]),
     E("Seated Cable Row",3,"12","compound","pressUp",["Back","Biceps"],["Sit tall, slight knee bend, grip the handle.","Pull to your stomach, elbows close.","Squeeze your shoulder blades together.","Extend your arms forward slowly."]),
     E("One-Arm Dumbbell Row",3,"12","compound","pressUp",["Back","Biceps"],["One knee and hand on the bench, flat back.","Pull the dumbbell up to your hip.","Squeeze the lat at the top.","Lower under control, full stretch."]),
-    E("Barbell Biceps Curl",4,"10","isolation","curlUp",["Biceps"],["Stand, grip the bar shoulder-width, elbows at sides.","Curl up and squeeze the biceps.","Lower slowly — don't swing.","Keep elbows pinned to your body."]),
+    E("Barbell Biceps Curl",4,"10","isolation","curlUp",["Biceps"],["Stand, grip the bar shoulder-width, elbows at sides.","Curl up and squeeze the biceps.","Lower slowly, don't swing.","Keep elbows pinned to your body."]),
     E("Hammer Curl",3,"12","isolation","curlUp",["Biceps","Forearms"],["Hold dumbbells palms facing in (neutral grip).","Curl up keeping that neutral grip.","Squeeze at the top.","Lower slowly."]),
-    E("Incline Dumbbell Curl",3,"12","isolation","curlUp",["Biceps"],["Sit back on a 45–60° incline, arms hanging.","Curl up without letting elbows drift forward.","Squeeze the biceps hard.","Lower to a full stretch."]),
+    E("Incline Dumbbell Curl",3,"12","isolation","curlUp",["Biceps"],["Sit back on a 45 to 60° incline, arms hanging.","Curl up without letting elbows drift forward.","Squeeze the biceps hard.","Lower to a full stretch."]),
     E("Hanging Knee Raise",3,"12","core","generic",["Core"],R.legraise),
-    E("Incline Treadmill Walk",1,"10 min","cardio","generic",["Fat-loss"],["Incline 8–12%, brisk pace.","Tall posture, hands off rails.","Light sweat.","10 minutes done."]),
+    E("Incline Treadmill Walk",1,"10 min","cardio","generic",["Fat-loss"],["Incline 8 to 12%, brisk pace.","Tall posture, hands off rails.","Light sweat.","10 minutes done."]),
   ],
   wed:[
     E("Seated Dumbbell Shoulder Press",4,"10","compound","pressUp",["Shoulders","Triceps"],["Sit upright, dumbbells at shoulder height.","Press overhead until arms nearly straight.","Lower to ear level with control.","Don't arch your lower back."]),
-    E("Lateral Raise",4,"15","isolation","curlUp",["Side Delts"],["Dumbbells at your sides, slight elbow bend.","Raise out to the sides to shoulder height.","Lead with the elbows, pinkies slightly up.","Lower slowly — no swinging."]),
+    E("Lateral Raise",4,"15","isolation","curlUp",["Side Delts"],["Dumbbells at your sides, slight elbow bend.","Raise out to the sides to shoulder height.","Lead with the elbows, pinkies slightly up.","Lower slowly, no swinging."]),
     E("Front Raise",3,"12","isolation","curlUp",["Front Delts"],["Dumbbells in front of your thighs.","Raise straight in front to shoulder height.","Pause briefly at the top.","Lower with control."]),
     E("Rear-Delt Fly",3,"15","isolation","curlUp",["Rear Delts"],["Bend forward at the hips, arms hanging, slight elbow bend.","Raise the dumbbells out to the sides.","Squeeze your rear delts/upper back.","Lower slowly."]),
     E("Face Pull",3,"12","isolation","pressUp",["Rear Delts","Upper Back"],["Set a rope at face height, thumbs back.","Pull toward your face, elbows high and wide.","Squeeze the rear delts.","Return slowly."]),
     E("Dumbbell Shrugs",3,"15","isolation","curlUp",["Traps"],["Hold dumbbells at your sides.","Shrug your shoulders straight up toward your ears.","Squeeze the traps at the top.","Lower fully."]),
-    E("Crunch",3,"20","core","generic",["Abs"],["Lie on your back, knees bent, hands by your head.","Curl your shoulders off the floor toward your knees.","Squeeze the abs at the top.","Lower slowly — don't yank your neck."]),
+    E("Crunch",3,"20","core","generic",["Abs"],["Lie on your back, knees bent, hands by your head.","Curl your shoulders off the floor toward your knees.","Squeeze the abs at the top.","Lower slowly, don't yank your neck."]),
     E("Russian Twist",3,"20","core","generic",["Obliques"],["Sit, lean back slightly, feet up or down.","Rotate your torso side to side.","Touch hands/weight near each hip.","Keep your core braced."]),
     E("Lying Leg Raise",3,"15","core","generic",["Lower Abs"],R.legraise),
   ],
@@ -365,7 +371,7 @@ function buildDefault(){return {
     E("EZ-Bar Curl",3,"10","isolation","curlUp",["Biceps"],["Grip the EZ-bar on the inner angles.","Curl up with elbows fixed at your sides.","Squeeze the biceps.","Lower slowly."]),
     E("Triceps Rope Pushdown",3,"12","isolation","pressUp",["Triceps"],R.pushdown),
     E("Preacher Curl",3,"12","isolation","curlUp",["Biceps"],["Arms over the preacher pad, full stretch at the bottom.","Curl up and squeeze at the top.","Lower slowly to nearly straight.","Don't bounce out of the bottom."]),
-    E("Skull Crushers",3,"12","isolation","pressUp",["Triceps"],["Lie down, bar/dumbbells over your forehead, arms up.","Bend the elbows to lower toward your head.","Extend back up — keep elbows still.","Upper arms stay vertical."]),
+    E("Skull Crushers",3,"12","isolation","pressUp",["Triceps"],["Lie down, bar/dumbbells over your forehead, arms up.","Bend the elbows to lower toward your head.","Extend back up, keep elbows still.","Upper arms stay vertical."]),
     E("Concentration Curl",3,"12","isolation","curlUp",["Biceps"],["Seated, elbow braced on your inner thigh.","Curl the dumbbell up and squeeze hard.","Lower slowly to a full stretch.","No swinging."]),
     E("Cable Crunch",3,"15","core","generic",["Abs"],["Kneel at a high cable, rope by your head.","Crunch down, rounding your spine.","Squeeze the abs at the bottom.","Return slowly, hips still."]),
     E("Bicycle Crunch",3,"20","core","generic",["Abs","Obliques"],["Lie down, hands by head, legs up.","Bring opposite elbow to opposite knee.","Alternate in a pedaling motion.","Keep it slow and controlled."]),
@@ -377,64 +383,64 @@ function buildDefault(){return {
     E("Leg Curl",3,"15","isolation","pressUp",["Hamstrings"],["Lie/sit on the machine, pad on lower legs.","Curl your heels toward your glutes.","Squeeze the hamstrings.","Return slowly."]),
     E("Standing Calf Raise",4,"20","isolation","pressUp",["Calves"],["Balls of your feet on a step/platform.","Rise onto your toes as high as possible.","Squeeze the calves at the top.","Lower for a deep stretch."]),
     E("Hanging Leg Raise",3,"12","core","generic",["Lower Abs"],R.legraise),
-    E("Cardio — HIIT or fast walk",1,"15–20 min","cardio","generic",["Fat-loss"],["30s hard / 60s easy intervals, or a fast incline walk.","Keep your heart rate up.","Great fat-burning finisher.","15–20 minutes."]),
+    E("Cardio: HIIT or fast walk",1,"15 to 20 min","cardio","generic",["Fat-loss"],["30s hard / 60s easy intervals, or a fast incline walk.","Keep your heart rate up.","Great fat-burning finisher.","15 to 20 minutes."]),
   ],
   sat:[
-    E("HIIT / Incline Walk",1,"20–30 min","cardio","generic",["Fat-loss"],["Intervals (30s hard / 60s easy) or steady incline walk.","Keep moving, heart rate up.","Best dedicated fat-loss work of the week.","Optional — only if you have energy."]),
+    E("HIIT / Incline Walk",1,"20 to 30 min","cardio","generic",["Fat-loss"],["Intervals (30s hard / 60s easy) or steady incline walk.","Keep moving, heart rate up.","Best dedicated fat-loss work of the week.","Optional, only if you have energy."]),
     E("Biceps Curl (pump)",3,"15","isolation","curlUp",["Biceps"],R.curl),
     E("Triceps Pushdown (pump)",3,"15","isolation","pressUp",["Triceps"],R.pushdown),
     E("Hanging Leg Raise",3,"15","core","generic",["Abs"],R.legraise),
   ],
   sun:[
-    E("Rest Day — Active Recovery",1,"optional","cardio","generic",["Fat-loss"],["Rest days are when your muscles actually grow — take it easy.","Optional: a 20–30 min easy walk or light cardio for fat loss.","Stretch, hydrate, and sleep well.","Still hit your protein target to rebuild."]),
-    E("Light Walk / Cardio",1,"20–30 min","cardio","generic",["Fat-loss"],["Easy-pace walk, cycle, or light cardio.","Keep it relaxed — it aids recovery and burns a little fat.","No need to push hard today.","Optional."]),
-    E("Full-Body Stretch",1,"10 min","bodyweight","generic",["Core"],["Gentle stretches for all major muscle groups.","Hold each stretch 20–30 seconds.","Improves flexibility and recovery.","Breathe and relax."]),
+    E("Rest Day: Active Recovery",1,"optional","cardio","generic",["Fat-loss"],["Rest days are when your muscles actually grow, so take it easy.","Optional: a 20 to 30 min easy walk or light cardio for fat loss.","Stretch, hydrate, and sleep well.","Still hit your protein target to rebuild."]),
+    E("Light Walk / Cardio",1,"20 to 30 min","cardio","generic",["Fat-loss"],["Easy-pace walk, cycle, or light cardio.","Keep it relaxed, it aids recovery and burns a little fat.","No need to push hard today.","Optional."]),
+    E("Full-Body Stretch",1,"10 min","bodyweight","generic",["Core"],["Gentle stretches for all major muscle groups.","Hold each stretch 20 to 30 seconds.","Improves flexibility and recovery.","Breathe and relax."]),
   ],
 };}
 
 /* ===== 4-Day Arms & Shoulders plan ===== */
 function restDayEx(){return [
-  E("Rest Day — Active Recovery",1,"optional","cardio","generic",["Fat-loss"],["Rest days are when your muscles actually grow — take it easy.","Optional: a 20–30 min easy walk or light cardio for fat loss.","Stretch, hydrate, and sleep well.","Still hit your protein target to rebuild."]),
-  E("Light Walk / Cardio",1,"20–30 min","cardio","generic",["Fat-loss"],["Easy-pace walk, cycle, or light cardio.","Keep it relaxed — it aids recovery and burns a little fat.","No need to push hard today.","Optional."]),
-  E("Full-Body Stretch",1,"10 min","bodyweight","generic",["Core"],["Gentle stretches for all major muscle groups.","Hold each stretch 20–30 seconds.","Improves flexibility and recovery.","Breathe and relax."]),
+  E("Rest Day: Active Recovery",1,"optional","cardio","generic",["Fat-loss"],["Rest days are when your muscles actually grow, so take it easy.","Optional: a 20 to 30 min easy walk or light cardio for fat loss.","Stretch, hydrate, and sleep well.","Still hit your protein target to rebuild."]),
+  E("Light Walk / Cardio",1,"20 to 30 min","cardio","generic",["Fat-loss"],["Easy-pace walk, cycle, or light cardio.","Keep it relaxed, it aids recovery and burns a little fat.","No need to push hard today.","Optional."]),
+  E("Full-Body Stretch",1,"10 min","bodyweight","generic",["Core"],["Gentle stretches for all major muscle groups.","Hold each stretch 20 to 30 seconds.","Improves flexibility and recovery.","Breathe and relax."]),
 ];}
 function optionalCardioEx(){return [
-  E("HIIT / Incline Walk (optional)",1,"20–30 min","cardio","generic",["Fat-loss"],["Intervals (30s hard / 60s easy) or steady incline walk.","Keep moving, heart rate up.","Great optional fat-loss top-up.","Only if you have energy."]),
-  E("Plank",2,"45 sec","core","generic",["Core"],["Forearms on the floor, elbows under shoulders.","Body in one straight line — brace your abs.","Don't let hips sag or pike.","Breathe steadily and hold."]),
+  E("HIIT / Incline Walk (optional)",1,"20 to 30 min","cardio","generic",["Fat-loss"],["Intervals (30s hard / 60s easy) or steady incline walk.","Keep moving, heart rate up.","Great optional fat-loss top-up.","Only if you have energy."]),
+  E("Plank",2,"45 sec","core","generic",["Core"],["Forearms on the floor, elbows under shoulders.","Body in one straight line, brace your abs.","Don't let hips sag or pike.","Breathe steadily and hold."]),
 ];}
 const WORKOUT4_DEFS=[
   {focus:'Shoulders & Abs',build:()=>[
     E("Seated Dumbbell Shoulder Press",4,"10","compound","pressUp",["Shoulders","Triceps"],["Sit upright, dumbbells at shoulder height.","Press overhead until arms nearly straight.","Lower to ear level with control.","Don't arch your lower back."]),
-    E("Lateral Raise",4,"15","isolation","curlUp",["Side Delts"],["Dumbbells at your sides, slight elbow bend.","Raise out to the sides to shoulder height.","Lead with the elbows, pinkies slightly up.","Lower slowly — no swinging."]),
+    E("Lateral Raise",4,"15","isolation","curlUp",["Side Delts"],["Dumbbells at your sides, slight elbow bend.","Raise out to the sides to shoulder height.","Lead with the elbows, pinkies slightly up.","Lower slowly, no swinging."]),
     E("Front Raise",3,"12","isolation","curlUp",["Front Delts"],["Dumbbells in front of your thighs.","Raise straight in front to shoulder height.","Pause briefly at the top.","Lower with control."]),
     E("Rear-Delt Fly",3,"15","isolation","curlUp",["Rear Delts"],["Bend forward at the hips, arms hanging, slight elbow bend.","Raise the dumbbells out to the sides.","Squeeze your rear delts/upper back.","Lower slowly."]),
     E("Face Pull",3,"12","isolation","pressUp",["Rear Delts","Upper Back"],["Set a rope at face height, thumbs back.","Pull toward your face, elbows high and wide.","Squeeze the rear delts.","Return slowly."]),
     E("Dumbbell Shrugs",3,"15","isolation","curlUp",["Traps"],["Hold dumbbells at your sides.","Shrug your shoulders straight up toward your ears.","Squeeze the traps at the top.","Lower fully."]),
     E("Cable Crunch",3,"15","core","generic",["Abs"],["Kneel at a high cable, rope by your head.","Crunch down, rounding your spine.","Squeeze the abs at the bottom.","Return slowly, hips still."]),
     E("Hanging Leg Raise",3,"12","core","generic",["Lower Abs"],R.legraise),
-    E("Incline Treadmill Walk",1,"10 min","cardio","generic",["Fat-loss"],["Set incline 8–12% at a brisk pace.","Stand tall, don't hold the rails.","Breathe harder / light sweat.","Finish your 10 minutes."]),
+    E("Incline Treadmill Walk",1,"10 min","cardio","generic",["Fat-loss"],["Set incline 8 to 12% at a brisk pace.","Stand tall, don't hold the rails.","Breathe harder / light sweat.","Finish your 10 minutes."]),
   ]},
   {focus:'Biceps & Forearms 💪',build:()=>[
-    E("Barbell Biceps Curl",4,"10","isolation","curlUp",["Biceps"],["Stand, grip the bar shoulder-width, elbows at sides.","Curl up and squeeze the biceps.","Lower slowly — don't swing.","Keep elbows pinned to your body."]),
-    E("Incline Dumbbell Curl",4,"12","isolation","curlUp",["Biceps"],["Sit back on a 45–60° incline, arms hanging.","Curl up without letting elbows drift forward.","Squeeze the biceps hard.","Lower to a full stretch."]),
+    E("Barbell Biceps Curl",4,"10","isolation","curlUp",["Biceps"],["Stand, grip the bar shoulder-width, elbows at sides.","Curl up and squeeze the biceps.","Lower slowly, don't swing.","Keep elbows pinned to your body."]),
+    E("Incline Dumbbell Curl",4,"12","isolation","curlUp",["Biceps"],["Sit back on a 45 to 60° incline, arms hanging.","Curl up without letting elbows drift forward.","Squeeze the biceps hard.","Lower to a full stretch."]),
     E("Hammer Curl",4,"12","isolation","curlUp",["Biceps","Forearms"],["Hold dumbbells palms facing in (neutral grip).","Curl up keeping that neutral grip.","Squeeze at the top.","Lower slowly."]),
     E("Preacher Curl",3,"12","isolation","curlUp",["Biceps"],["Arms over the preacher pad, full stretch at the bottom.","Curl up and squeeze at the top.","Lower slowly to nearly straight.","Don't bounce out of the bottom."]),
     E("Concentration Curl",3,"12","isolation","curlUp",["Biceps"],["Seated, elbow braced on your inner thigh.","Curl the dumbbell up and squeeze hard.","Lower slowly to a full stretch.","No swinging."]),
     E("Reverse Barbell Curl",3,"15","isolation","curlUp",["Forearms","Biceps"],R.revcurl),
     E("Wrist Curl",3,"20","isolation","curlUp",["Forearms"],R.wristcurl),
     E("Reverse Wrist Curl",3,"20","isolation","curlUp",["Forearms"],R.revwristcurl),
-    E("Plank",3,"45 sec","core","generic",["Core"],["Forearms on the floor, elbows under shoulders.","Body in one straight line — brace your abs.","Don't let hips sag or pike.","Breathe steadily and hold."]),
+    E("Plank",3,"45 sec","core","generic",["Core"],["Forearms on the floor, elbows under shoulders.","Body in one straight line, brace your abs.","Don't let hips sag or pike.","Breathe steadily and hold."]),
   ]},
   {focus:'Back & Triceps',build:()=>[
     E("Lat Pulldown",4,"10","compound","pressUp",["Lats","Biceps"],["Grip the bar wider than shoulders, chest up.","Pull the bar to your upper chest, driving elbows down.","Squeeze your back at the bottom.","Return slowly to a full stretch."]),
     E("Seated Cable Row",3,"12","compound","pressUp",["Back","Biceps"],["Sit tall, slight knee bend, grip the handle.","Pull to your stomach, elbows close.","Squeeze your shoulder blades together.","Extend your arms forward slowly."]),
     E("One-Arm Dumbbell Row",3,"12","compound","pressUp",["Back","Biceps"],["One knee and hand on the bench, flat back.","Pull the dumbbell up to your hip.","Squeeze the lat at the top.","Lower under control, full stretch."]),
     E("Triceps Rope Pushdown",4,"12","isolation","pressUp",["Triceps"],R.pushdown),
-    E("Overhead Dumbbell Extension",3,"12","isolation","pressUp",["Triceps"],["Hold one dumbbell overhead with both hands.","Lower it behind your head, elbows pointing up.","Extend back to the top.","Keep elbows close — don't flare."]),
-    E("Skull Crushers",3,"12","isolation","pressUp",["Triceps"],["Lie down, bar/dumbbells over your forehead, arms up.","Bend the elbows to lower toward your head.","Extend back up — keep elbows still.","Upper arms stay vertical."]),
+    E("Overhead Dumbbell Extension",3,"12","isolation","pressUp",["Triceps"],["Hold one dumbbell overhead with both hands.","Lower it behind your head, elbows pointing up.","Extend back to the top.","Keep elbows close, don't flare."]),
+    E("Skull Crushers",3,"12","isolation","pressUp",["Triceps"],["Lie down, bar/dumbbells over your forehead, arms up.","Bend the elbows to lower toward your head.","Extend back up, keep elbows still.","Upper arms stay vertical."]),
     E("Bench Dips",3,"to failure","bodyweight","pressUp",["Triceps"],["Hands on a bench behind you, legs out in front.","Bend your elbows to lower to ~90°.","Press back up to straight arms.","Keep your hips close to the bench."]),
     E("Hanging Knee Raise",3,"12","core","generic",["Core"],R.legraise),
-    E("Incline Treadmill Walk",1,"10 min","cardio","generic",["Fat-loss"],["Incline 8–12%, brisk pace.","Tall posture, hands off rails.","Light sweat.","10 minutes done."]),
+    E("Incline Treadmill Walk",1,"10 min","cardio","generic",["Fat-loss"],["Incline 8 to 12%, brisk pace.","Tall posture, hands off rails.","Light sweat.","10 minutes done."]),
   ]},
   {focus:'Legs & Biceps',build:()=>[
     E("Goblet Squat / Leg Press",4,"12","compound","pressUp",["Quads","Glutes"],["Hold a dumbbell at your chest (or use the leg press).","Squat down, knees tracking over toes.","Go at least to thigh-parallel.","Drive up through your heels."]),
@@ -444,7 +450,7 @@ const WORKOUT4_DEFS=[
     E("Standing Calf Raise",4,"20","isolation","pressUp",["Calves"],["Balls of your feet on a step/platform.","Rise onto your toes as high as possible.","Squeeze the calves at the top.","Lower for a deep stretch."]),
     E("Biceps Curl (pump)",3,"15","isolation","curlUp",["Biceps"],R.curl),
     E("Hammer Curl (pump)",3,"12","isolation","curlUp",["Biceps","Forearms"],["Hold dumbbells palms facing in (neutral grip).","Curl up keeping that neutral grip.","Squeeze at the top.","Lower slowly."]),
-    E("Cardio — HIIT or fast walk",1,"15–20 min","cardio","generic",["Fat-loss"],["30s hard / 60s easy intervals, or a fast incline walk.","Keep your heart rate up.","Great fat-burning finisher.","15–20 minutes."]),
+    E("Cardio: HIIT or fast walk",1,"15 to 20 min","cardio","generic",["Fat-loss"],["30s hard / 60s easy intervals, or a fast incline walk.","Keep your heart rate up.","Great fat-burning finisher.","15 to 20 minutes."]),
   ]},
 ];
 function build4Day(trainDays){
@@ -454,15 +460,65 @@ function build4Day(trainDays){
   plan.sat=optionalCardioEx();plan.sun=restDayEx();
   return plan;
 }
-function focus4Map(trainDays){
-  const td=(trainDays&&trainDays.length===4?trainDays:DEFAULT_TRAIN_DAYS).slice().sort((a,b)=>WEEKDAYS5.indexOf(a)-WEEKDAYS5.indexOf(b));
-  const map={};let wi=0;
-  for(const d of WEEKDAYS5){map[d]=td.includes(d)?WORKOUT4_DEFS[wi++].focus:'Rest / Recovery';}
-  map.sat='Optional · Light Cardio';map.sun='Rest / Active Recovery';
-  return map;
+/* ===== swappable days: pick body parts per day ===== */
+const PARTS=[
+  {k:'chest',n:'Chest',i:'🫁'},{k:'back',n:'Back',i:'🦅'},{k:'shoulders',n:'Shoulders',i:'🏔️'},
+  {k:'biceps',n:'Biceps',i:'💪'},{k:'triceps',n:'Triceps',i:'🔱'},{k:'forearms',n:'Forearms',i:'✊'},
+  {k:'legs',n:'Legs',i:'🦵'},{k:'abs',n:'Abs',i:'🧱'},{k:'cardio',n:'Cardio',i:'🏃'}
+];
+const PART_NAME=Object.fromEntries(PARTS.map(p=>[p.k,p.n]));
+const MUSCLE_PART={'Chest':'chest','Upper Chest':'chest','Lats':'back','Back':'back','Lower Back':'back','Middle Back':'back',
+  'Shoulders':'shoulders','Side Delts':'shoulders','Front Delts':'shoulders','Rear Delts':'shoulders','Traps':'shoulders','Upper Back':'shoulders',
+  'Biceps':'biceps','Triceps':'triceps','Forearms':'forearms',
+  'Quads':'legs','Glutes':'legs','Hamstrings':'legs','Calves':'legs','Adductors':'legs','Abductors':'legs',
+  'Core':'abs','Abs':'abs','Lower Abs':'abs','Obliques':'abs','Fat-loss':'cardio'};
+function partOf(e){
+  if(/^(Rest Day|Full-Body Stretch)/.test(e.name))return 'rest';
+  if(e.type==='cardio')return 'cardio';
+  for(const m of (e.muscles||[]))if(MUSCLE_PART[m])return MUSCLE_PART[m];
+  return 'other';
 }
-function focusMap(){return state.planMode==='4day'?focus4Map(state.trainDays):FOCUS;}
-function restDayKeys(){if(state.planMode==='4day')return WEEKDAYS5.filter(d=>!state.trainDays.includes(d)).concat(['sat','sun']);return ['sat','sun'];}
+// exercises added when a part is switched on (names from the built-in plans)
+const PART_PICKS={
+  chest:['Flat Dumbbell Bench Press','Incline Dumbbell Press','Cable / Pec-Deck Fly','Push-ups (warm-up)'],
+  back:['Lat Pulldown','Seated Cable Row','One-Arm Dumbbell Row'],
+  shoulders:['Seated Dumbbell Shoulder Press','Lateral Raise','Rear-Delt Fly','Face Pull'],
+  biceps:['Barbell Biceps Curl','Hammer Curl','Incline Dumbbell Curl'],
+  triceps:['Triceps Rope Pushdown','Overhead Dumbbell Extension','Skull Crushers'],
+  forearms:['Reverse Barbell Curl','Wrist Curl','Reverse Wrist Curl'],
+  legs:['Goblet Squat / Leg Press','Walking Lunges','Leg Extension','Leg Curl','Standing Calf Raise'],
+  abs:['Hanging Leg Raise','Cable Crunch','Plank'],
+  cardio:['Incline Treadmill Walk']
+};
+const CATALOG={};
+for(const e of [...Object.values(buildDefault()).flat(),...WORKOUT4_DEFS.flatMap(w=>w.build())])if(!CATALOG[e.name])CATALOG[e.name]=e;
+function dayParts(d){const s=new Set((state.plan[d]||[]).map(partOf));return PARTS.map(p=>p.k).filter(k=>s.has(k));}
+function isRestDay(d){return !dayParts(d).some(p=>p!=='cardio');}
+function dayFocus(d){const ps=dayParts(d),lift=ps.filter(p=>p!=='cardio').map(p=>PART_NAME[p]);
+  const and=l=>l.length>1?l.slice(0,-1).join(', ')+' & '+l[l.length-1]:l[0];
+  if(lift.length)return lift.length>3?lift.slice(0,3).join(', ')+' +'+(lift.length-3):and(lift);
+  if(ps.includes('cardio'))return (state.plan[d]||[]).some(e=>partOf(e)==='rest')?'Rest & Cardio':'Cardio';
+  return (state.plan[d]||[]).length?'Rest / Recovery':'Pick a body part';}
+function focusMap(){const m={};for(const d of DAYS)m[d]=dayFocus(d);return m;}
+function togglePart(d,p){
+  const list=state.plan[d]=state.plan[d]||[];
+  if(list.some(e=>partOf(e)===p)){
+    state.plan[d]=list.filter(e=>partOf(e)!==p);
+    toast(PART_NAME[p]+' removed from '+FULLDAY[d]);
+  }else{
+    const have=new Set(list.map(e=>e.id));
+    const add=PART_PICKS[p].map(n=>CATALOG[n]).filter(e=>e&&!have.has(e.id)).map(e=>({...e,muscles:e.muscles.slice(),steps:e.steps.slice()}));
+    if(p==='cardio')list.push(...add);
+    else{
+      // a lifting day is no longer a rest day
+      state.plan[d]=list.filter(e=>partOf(e)!=='rest');
+      const l=state.plan[d],ci=l.findIndex(e=>partOf(e)==='cardio');
+      l.splice(ci<0?l.length:ci,0,...add);
+    }
+    toast(PART_NAME[p]+' added to '+FULLDAY[d]+' 💪');
+  }
+  ensureEx(state);save();render();
+}
 
 /* fallback SVG (custom exercises with no photo) */
 const ANIM={
@@ -518,7 +574,7 @@ function bodyMap(muscles){
 
 /* ===== charts ===== */
 function lineChart(data,unit){
-  if(!data.length) return '<div class="muted center">No data yet — log a few and your trend appears here.</div>';
+  if(!data.length) return '<div class="muted center">No data yet, log a few and your trend appears here.</div>';
   const W=300,H=140,pad=30;let vs=data.map(d=>d.v),mn=Math.min(...vs),mx=Math.max(...vs);
   if(mn===mx){mn=Math.max(0,mn-2);mx+=2;}
   const X=i=>pad+i*(W-pad-12)/Math.max(1,data.length-1);
@@ -545,7 +601,7 @@ function barChart(data){
 const KEY='gymtrack_v2';
 function mondayOf(d){const x=new Date(d);const wd=(x.getDay()+6)%7;x.setHours(0,0,0,0);x.setDate(x.getDate()-wd);return x;}
 function weekKey(d){const m=mondayOf(d);return m.getFullYear()+'-'+String(m.getMonth()+1).padStart(2,'0')+'-'+String(m.getDate()).padStart(2,'0');}
-function weekRange(d){const m=mondayOf(d),s=new Date(m),e=new Date(m);e.setDate(e.getDate()+6);const f=x=>x.toLocaleDateString(undefined,{month:'short',day:'numeric'});return f(s)+' – '+f(e);}
+function weekRange(d){const m=mondayOf(d),s=new Date(m),e=new Date(m);e.setDate(e.getDate()+6);const f=x=>x.toLocaleDateString(undefined,{month:'short',day:'numeric'});return f(s)+' to '+f(e);}
 function dateStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function todayKey(){const i=(new Date().getDay()+6)%7;return DAYS[i]||'mon';}
 function defInc(t){return (t==='compound'||t==='isolation')?2.5:0;}
@@ -578,8 +634,10 @@ let activeDay=todayKey();
 const $=s=>document.querySelector(s);
 function esc(t){return String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function nameOf(id){for(const d of DAYS){const e=(state.plan[d]||[]).find(e=>e.id===id);if(e)return e.name;}return id;}
-function render(){$('#weeklbl').textContent='Week of '+weekRange(new Date());renderTabs();renderSummary();renderList();}
-function renderTabs(){const fm=focusMap(),rest=restDayKeys();$('#tabs').innerHTML=DAYS.map(d=>{const opt=rest.includes(d)?'<div class="opt">optional</div>':'';
+function render(){$('#weeklbl').textContent='Week of '+weekRange(new Date());renderTabs();renderParts();renderSummary();renderList();}
+function renderParts(){const on=new Set(dayParts(activeDay));
+  $('#parts').innerHTML=`<div class="partlbl">Train on ${FULLDAY[activeDay]}</div><div class="pchips">${PARTS.map(p=>`<button type="button" class="pchip ${on.has(p.k)?'on':''}" data-part="${p.k}">${p.i} ${p.n}</button>`).join('')}</div>`;}
+function renderTabs(){const fm=focusMap();$('#tabs').innerHTML=DAYS.map(d=>{const opt=isRestDay(d)?'<div class="opt">optional</div>':'';
   return `<div class="tab ${d===activeDay?'active':''} ${d===todayKey()?'today':''}" data-day="${d}"><div class="d">${DLABEL[d]}</div><div class="n">${fm[d].split(' ')[0]}</div>${opt}</div>`;}).join('');}
 function dayDone(d){const list=state.plan[d]||[],chk=state.checks[d]||{};return{done:list.filter(e=>chk[e.id]).length,total:list.length};}
 function renderSummary(){const{done,total}=dayDone(activeDay),pct=total?Math.round(done/total*100):0;
@@ -617,9 +675,9 @@ function openDetail(i){
   const weighted=e.type==='compound'||e.type==='isolation',optWeight=e.type==='bodyweight'||e.type==='core';
   const imgs=imgsFor(e);
   const demo=imgs?`<img class="demoimg" id="frameA" src="${imgs[0]}" alt="start">${imgs[1]?`<img class="demoimg" id="frameB" src="${imgs[1]}" style="opacity:0" alt="finish">`:''}`:animSVG(e.anim);
-  const cap=imgs?'Real demo — start ⇄ finish position (loops). Tap ▶ for a full video.':'Stylized guide — tap ▶ Watch video for real footage.';
+  const cap=imgs?'Real demo: start ⇄ finish position (loops). Tap ▶ for a full video.':'Stylized guide: tap ▶ Watch video for real footage.';
   const sugHtml=(x.suggestion!=null&&(x.weight==null||x.suggestion>x.weight))?
-    `<div class="sug">📈 <b>Progressive overload:</b> last time you hit your reps at <b>${x.weight??'—'}kg</b>. Try <b>${x.suggestion}kg</b> this week.<button class="btn primary" data-accept="${e.id}" style="margin-top:10px">Accept ${x.suggestion}kg</button></div>`:'';
+    `<div class="sug">📈 <b>Progressive overload:</b> last time you hit your reps at <b>${x.weight??'-'}kg</b>. Try <b>${x.suggestion}kg</b> this week.<button class="btn primary" data-accept="${e.id}" style="margin-top:10px">Accept ${x.suggestion}kg</button></div>`:'';
   const histData=(x.history||[]).map(h=>({label:h.week.slice(5),v:h.weight}));
   if(x.weight!=null)histData.push({label:'now',v:x.weight});
   const histHtml=histData.length>1?`<div class="sectlbl">Weight progress</div>${lineChart(histData,'kg')}`:'';
@@ -627,12 +685,12 @@ function openDetail(i){
   if(weighted||optWeight){
     tracker=`<div class="sectlbl">${optWeight?'Added weight (optional)':'Your working weight'}</div><div class="track">
       <div class="wrow"><div class="wfield"><span class="lbl">Weight (kg)</span>
-        <div class="stepper"><button data-wstep="-">−</button><input id="wInput" type="number" inputmode="decimal" step="0.5" value="${x.weight!=null?x.weight:''}" placeholder="0"><button data-wstep="+">+</button></div></div></div>
+        <div class="stepper"><button data-wstep="-">-</button><input id="wInput" type="number" inputmode="decimal" step="0.5" value="${x.weight!=null?x.weight:''}" placeholder="0"><button data-wstep="+">+</button></div></div></div>
       <div class="toggle ${x.hitReps?'on':''}" id="hitToggle"><div class="sw"></div><div>I hit all ${e.sets}×${esc(e.reps)} sets ✅</div></div>
       <div class="calbig">🔥 <span>≈ <b id="calLive">${estCalW(e,x.weight||0)}</b> kcal this session</span></div>
       <button class="btn primary" id="saveWeight">💾 Save weight for this week</button></div>`;
   } else {
-    tracker=`<div class="calbig">🔥 <span>≈ <b>${estCal(e)}</b> kcal — just complete it and tick it off. This is your fat-burning work.</span></div>`;
+    tracker=`<div class="calbig">🔥 <span>≈ <b>${estCal(e)}</b> kcal, just complete it and tick it off. This is your fat-burning work.</span></div>`;
   }
   $('#detailBody').innerHTML=`
     <div class="demo" id="demoBox">${demo}</div><div class="cap">${cap}</div>
@@ -666,11 +724,11 @@ function openForm(i){
   const e=editing?state.plan[activeDay][i]:{name:'',sets:3,reps:'12',type:'isolation',anim:'curlUp',muscles:[],steps:[]};
   $('#formBody').innerHTML=`<div class="dtitle">${editing?'Edit exercise':'Add exercise'}</div>
     <div class="field"><span class="lbl">Exercise name</span><input id="fName" value="${esc(e.name)}" placeholder="e.g. Cable Curl"></div>
-    <div class="field"><span class="lbl">Day</span><select id="fDay">${DAYS.map(d=>`<option value="${d}" ${d===activeDay?'selected':''}>${FULLDAY[d]} — ${focusMap()[d]}</option>`).join('')}</select></div>
+    <div class="field"><span class="lbl">Day</span><select id="fDay">${DAYS.map(d=>`<option value="${d}" ${d===activeDay?'selected':''}>${FULLDAY[d]}: ${focusMap()[d]}</option>`).join('')}</select></div>
     <div class="wrow" style="margin-top:12px"><div class="wfield"><span class="lbl">Sets</span><input id="fSets" type="number" min="1" value="${e.sets}"></div>
       <div class="wfield"><span class="lbl">Reps / time</span><input id="fReps" value="${esc(e.reps)}" placeholder="12 or 45 sec"></div></div>
     <div class="field"><span class="lbl">Type (controls weight + calories)</span><select id="fType">${['compound','isolation','bodyweight','core','cardio'].map(t=>`<option ${t===e.type?'selected':''}>${t}</option>`).join('')}</select></div>
-    <div class="field"><span class="lbl">Target muscles (comma separated — drives the muscle map)</span><input id="fMus" value="${esc((e.muscles||[]).join(', '))}" placeholder="Biceps, Forearms"></div>
+    <div class="field"><span class="lbl">Target muscles (comma separated, drives the muscle map)</span><input id="fMus" value="${esc((e.muscles||[]).join(', '))}" placeholder="Biceps, Forearms"></div>
     <div class="field"><span class="lbl">How-to steps (one per line)</span><textarea id="fSteps" rows="5" placeholder="Step one&#10;Step two">${esc((e.steps||[]).join('\n'))}</textarea></div>
     <p class="muted" style="margin-top:10px">Use muscle names like: Chest, Triceps, Biceps, Side Delts, Front Delts, Rear Delts, Traps, Lats, Abs, Obliques, Quads, Glutes, Hamstrings, Calves, Forearms.</p>
     <button class="btn primary" id="formSave">${editing?'Save changes':'Add exercise'}</button>
@@ -699,7 +757,7 @@ function renderStats(){
   let goalHtml;
   if(goal.targetWeight){const dir=bw>goal.targetWeight?'lose':'gain',remain=Math.abs(bw-goal.targetWeight),weeks=Math.max(1,Math.ceil(remain/goal.ratePerWeek));let pace='';
     if(goal.startWeight!=null&&goal.startDate){const ew=Math.max(0,(new Date(dateStr(new Date()))-new Date(goal.startDate))/(7*864e5));const ideal=dir==='lose'?Math.max(goal.targetWeight,goal.startWeight-goal.ratePerWeek*ew):Math.min(goal.targetWeight,goal.startWeight+goal.ratePerWeek*ew);const diff=+(bw-ideal).toFixed(1),onTrack=Math.abs(diff)<=1;
-      pace=`<div class="phelp" style="margin-top:10px;background:linear-gradient(135deg,rgba(255,106,61,.16),rgba(255,77,109,.12));border-color:rgba(255,106,61,.35);color:#f3dcd2">Ideal by today: <b>${ideal.toFixed(1)}kg</b> · You: <b>${bw}kg</b> → ${onTrack?'✅ On track!':(dir==='lose'?(diff>0?'a bit behind — hold the deficit + protein':'ahead of schedule 🚀'):(diff<0?'a bit behind — eat a little more':'ahead 🚀'))}</div>`;}
+      pace=`<div class="phelp" style="margin-top:10px;background:linear-gradient(135deg,rgba(255,106,61,.16),rgba(255,77,109,.12));border-color:rgba(255,106,61,.35);color:#f3dcd2">Ideal by today: <b>${ideal.toFixed(1)}kg</b> · You: <b>${bw}kg</b> → ${onTrack?'✅ On track!':(dir==='lose'?(diff>0?'a bit behind, hold the deficit + protein':'ahead of schedule 🚀'):(diff<0?'a bit behind, eat a little more':'ahead 🚀'))}</div>`;}
     const totalSpan=goal.startWeight!=null?Math.abs(goal.startWeight-goal.targetWeight):remain,doneSpan=goal.startWeight!=null?Math.abs(goal.startWeight-bw):0,pct=Math.max(0,Math.min(100,Math.round(doneSpan/Math.max(0.1,totalSpan)*100)));
     goalHtml=`<div class="netline" style="text-align:left;margin:0 0 8px">🎯 Target <b>${goal.targetWeight}kg</b> · ${dir} <b>${remain.toFixed(1)}kg</b> · ~${weeks} wks (≈${(goal.ratePerWeek*4).toFixed(1)}kg/mo)</div><div class="nbar" style="background:var(--card2)"><div class="nbar-fill" style="width:${pct}%;background:linear-gradient(90deg,#ff6a3d,#ff4d6d)"></div></div>${pace}<button class="btn ghost" id="goalEdit" style="margin-top:10px">✎ Change goal</button>`;
   }else if(bwSet){const sugg=htSet?(bw>hiW?Math.round(hiW-1):Math.max(loW,Math.round(bw-3))):Math.round(bw-3);goalHtml=`<p class="muted">Set a target weight to track ideal monthly progress. Safe pace: <b>0.5 kg/week (~2 kg/month)</b>.</p><div class="wrow" style="margin-top:8px"><div class="wfield"><span class="lbl">Target weight (kg)</span><input id="goalInput" type="number" step="0.5" value="${sugg}"></div><button class="btn primary" id="goalSet" style="margin-top:0;flex:0 0 auto;width:auto;padding:13px 18px">Set</button></div>`;
@@ -713,18 +771,18 @@ function renderStats(){
   const bmiCat=bmi<18.5?'underweight':bmi<25?'healthy':bmi<30?'overweight':'high';
   $('#statsBody').innerHTML=`<div class="dtitle">Your Progress</div>
     <div class="sectlbl">Body weight</div>
-    <div style="display:flex;align-items:flex-end;gap:12px"><div class="bignum">${bwSet?bw:'—'}<small>kg</small></div>
+    <div style="display:flex;align-items:flex-end;gap:12px"><div class="bignum">${bwSet?bw:'-'}<small>kg</small></div>
       ${trend?`<span class="trend ${trend<0?'down':'up'}">${trend<0?'▼':'▲'} ${Math.abs(trend)}kg</span>`:''}
       <span class="muted" style="margin-left:auto">${(htSet&&bwSet)?`BMI ${bmi.toFixed(1)} · ${bmiCat}`:'Add height & weight for BMI'}</span></div>
     ${lineChart(bwData,'kg')}
     <div class="wrow" style="margin-top:10px"><div class="wfield"><span class="lbl">Log today's weight (kg)</span><input id="bwInput" type="number" inputmode="decimal" step="0.1" placeholder="${bwSet?bw:'e.g. 68'}"></div>
       <button class="btn primary" id="bwSave" style="margin-top:0;flex:0 0 auto;width:auto;padding:13px 18px">Log</button></div>
-    <div class="field"><span class="lbl">Your height (cm) — for BMI</span><input id="htInput" type="number" value="${htSet?state.profile.height:''}" placeholder="e.g. 170"></div>
-    <div class="sectlbl">Calories burned — last 7 days</div>
+    <div class="field"><span class="lbl">Your height (cm), for BMI</span><input id="htInput" type="number" value="${htSet?state.profile.height:''}" placeholder="e.g. 170"></div>
+    <div class="sectlbl">Calories burned (last 7 days)</div>
     <div class="bignum" style="font-size:26px">${weekCal}<small> kcal this week</small></div>
     ${barChart(last7)}
     <div class="sectlbl">Monthly goal</div>
-    <div class="muted" style="margin-bottom:8px">${htSet?`Healthy range for ${Math.round(h*100)}cm: <b>${loW}–${hiW} kg</b> (BMI 18.5–24.9). ${bwSet?`Now <b>${bw}kg</b> · BMI ${bmi.toFixed(1)}.`:''}`:'Add your height above to see your healthy weight range & BMI.'}</div>
+    <div class="muted" style="margin-bottom:8px">${htSet?`Healthy range for ${Math.round(h*100)}cm: <b>${loW} to ${hiW} kg</b> (BMI 18.5 to 24.9). ${bwSet?`Now <b>${bw}kg</b> · BMI ${bmi.toFixed(1)}.`:''}`:'Add your height above to see your healthy weight range & BMI.'}</div>
     ${goalHtml}
     <div class="sectlbl">Strongest lifts</div>
     ${lifts.length?lifts.slice(0,8).map(l=>`<div class="liftrow"><span>${esc(l.name)}</span><b>${l.w} kg</b></div>`).join(''):'<div class="muted center">Log some weights to see your top lifts.</div>'}`;
@@ -751,6 +809,7 @@ function closeSheets(fromPop){stopDemo();$('#scrim').classList.remove('show');do
 $('#scrim').addEventListener('click',()=>closeSheets());
 document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>closeSheets()));
 $('#tabs').addEventListener('click',ev=>{const t=ev.target.closest('[data-day]');if(t){activeDay=t.dataset.day;render();}});
+$('#parts').addEventListener('click',ev=>{const b=ev.target.closest('[data-part]');if(b)togglePart(activeDay,b.dataset.part);});
 $('#list').addEventListener('click',ev=>{const t=ev.target;
   const check=t.closest('[data-check]');
   if(check){const i=+check.dataset.check,e=state.plan[activeDay][i];state.checks[activeDay]=state.checks[activeDay]||{};
@@ -779,14 +838,14 @@ $('#gearBtn').addEventListener('click',()=>{renderModeUI();openSheet('#settingsS
 function renderModeUI(){const is4=state.planMode==='4day';
   $('#mode5Btn').classList.toggle('primary',!is4);$('#mode5Btn').classList.toggle('ghost',is4);
   $('#mode4Btn').classList.toggle('primary',is4);$('#mode4Btn').classList.toggle('ghost',!is4);
-  $('#modeDesc').textContent=is4?'4-Day Arms & Shoulders Focus — priority order: Biceps & Forearms, Shoulders, Back & Triceps, Legs & Biceps (extra bicep pump). Chest work is dropped and cardio finishers are built in to help lose chest/belly fat.':'5-Day Full Split — Chest, Back+Biceps, Shoulders+Abs, Arms+Abs, Legs.';
+  $('#modeDesc').textContent=is4?'4-Day Arms & Shoulders Focus. Priority order: Biceps & Forearms, Shoulders, Back & Triceps, Legs & Biceps (extra bicep pump). Chest work is dropped and cardio finishers are built in to help lose chest/belly fat.':'5-Day Full Split: Chest, Back+Biceps, Shoulders+Abs, Arms+Abs, Legs.';
   $('#dayPickerWrap').style.display=is4?'block':'none';
   renderDayPicker();}
 function renderDayPicker(){$('#dayPicker').innerHTML=WEEKDAYS5.map(d=>`<button type="button" class="daychip ${state.trainDays.includes(d)?'sel':''}" data-tday="${d}">${DLABEL[d]}</button>`).join('');}
 $('#dayPicker').addEventListener('click',ev=>{const b=ev.target.closest('[data-tday]');if(!b)return;const d=b.dataset.tday;
   let td=state.trainDays.slice();
   if(td.includes(d)){if(td.length<=1){toast('Pick at least 1 day');return;}td=td.filter(x=>x!==d);}
-  else{if(td.length>=4){toast('Pick exactly 4 — tap one to remove first');return;}td.push(d);}
+  else{if(td.length>=4){toast('Pick exactly 4. Tap one to remove first');return;}td.push(d);}
   state.trainDays=td;renderDayPicker();
   if(td.length===4){state.plan=build4Day(state.trainDays);ensureEx(state);state.checks={};save();render();toast('Days updated 💪');}});
 $('#mode5Btn').addEventListener('click',()=>{if(state.planMode==='5day')return;
@@ -915,15 +974,15 @@ function renderFood(){
   const calColor=over?'linear-gradient(90deg,#ff5a5a,#ff2d55)':'linear-gradient(90deg,#12b5b0,#2f7bf6)';
   let coEmoji,coColor,coTitle,coMsg;const diffC=con.kcal-ct;
   if(con.kcal===0){coEmoji='🍽️';coColor='#2f7bf6';coTitle='Log your meals to start';coMsg='Track what you eat to see your deficit and protein progress.';}
-  else if(diffC>200){coEmoji='⚠️';coColor='#ff5a5a';coTitle=`Over by ${diffC} kcal — surplus`;coMsg=`To lose belly &amp; chest fat you need a deficit. Trim ~${diffC} kcal (cut mayo / nutella / a snack) — but keep the protein high.`;}
-  else if(diffC>-150){coEmoji='⚖️';coColor='#f59e0b';coTitle='Around maintenance';coMsg='OK for slow recomp. For faster fat loss, eat ~300–400 kcal under this while keeping protein high to build muscle.';}
-  else{coEmoji='🔥';coColor='#16b083';coTitle=`Deficit of ${-diffC} kcal — fat-loss zone`;coMsg=con.protein>=pt?'Perfect: deficit + protein hit = lose fat while building muscle. 💪':`Great deficit. Now push protein to ${pt}g (eggs / soya / chicken) to protect &amp; build muscle.`;}
+  else if(diffC>200){coEmoji='⚠️';coColor='#ff5a5a';coTitle=`Over by ${diffC} kcal: surplus`;coMsg=`To lose belly &amp; chest fat you need a deficit. Trim ~${diffC} kcal (cut mayo / nutella / a snack), but keep the protein high.`;}
+  else if(diffC>-150){coEmoji='⚖️';coColor='#f59e0b';coTitle='Around maintenance';coMsg='OK for slow recomp. For faster fat loss, eat ~300 to 400 kcal under this while keeping protein high to build muscle.';}
+  else{coEmoji='🔥';coColor='#16b083';coTitle=`Deficit of ${-diffC} kcal, fat-loss zone`;coMsg=con.protein>=pt?'Perfect: deficit + protein hit = lose fat while building muscle. 💪':`Great deficit. Now push protein to ${pt}g (eggs / soya / chicken) to protect &amp; build muscle.`;}
   const coachHtml=`<div class="coach" style="border-color:${coColor}55;background:${coColor}14"><div class="ctitle" style="color:${coColor}">${coEmoji} ${coTitle}</div><div class="cmsg">${coMsg}</div></div>`;
   const meals=MEALS.map(m=>{const items=dayLog(selDate)[m.k];let mk=0;
     const rows=items.map((it,idx)=>{const f=foodById(it.foodId);if(!f)return '';mk+=f.kcal*it.qty;
       return `<div class="fitem"><div class="femoji">${f.emoji}</div>
         <div class="fmeta"><div class="fnm">${esc(f.name)}</div><div class="fsub">${esc(f.serving)} · ${f.kcal} kcal · ${f.protein}g P</div></div>
-        <div class="qty"><button class="qbtn" data-dec="${m.k}:${idx}">−</button><span class="qn">${it.qty}</span><button class="qbtn" data-inc="${m.k}:${idx}">+</button></div></div>`;}).join('');
+        <div class="qty"><button class="qbtn" data-dec="${m.k}:${idx}">-</button><span class="qn">${it.qty}</span><button class="qbtn" data-inc="${m.k}:${idx}">+</button></div></div>`;}).join('');
     return `<div class="meal"><div class="mealhd">${m.e} ${m.n}<span class="mc">${Math.round(mk)} kcal</span></div>
       ${rows||'<div class="fsub" style="padding:6px 0">Nothing logged yet.</div>'}
       <button class="addfood" data-addmeal="${m.k}">＋ Add food</button></div>`;}).join('');
@@ -980,7 +1039,7 @@ function openNutriSet(){const n=state.nutri;const mode=n.calTargetOverride!=null
     <div class="field"><span class="lbl">Protein per kg of body weight</span><select id="nsPro">${[['1.6'],['1.8'],['2'],['2.2']].map(([v])=>`<option value="${v}" ${parseFloat(v)===n.proteinPerKg?'selected':''}>${v} g/kg  (~${Math.round(getBW()*parseFloat(v))} g/day)</option>`).join('')}</select></div>
     <div class="field"><span class="lbl">Daily calorie goal</span><select id="nsGoal">
       <option value="lose" ${mode==='lose'?'selected':''}>Lose fat (~${Math.round(getBW()*28)} kcal)</option>
-      <option value="recomp" ${mode==='recomp'?'selected':''}>Recomp — lose fat + build (~${Math.round(getBW()*30)} kcal)</option>
+      <option value="recomp" ${mode==='recomp'?'selected':''}>Recomp: lose fat + build (~${Math.round(getBW()*30)} kcal)</option>
       <option value="maintain" ${mode==='maintain'?'selected':''}>Maintain (~${Math.round(getBW()*35)} kcal)</option>
       <option value="custom" ${mode==='custom'?'selected':''}>Custom number</option></select></div>
     <div class="field" id="nsCustomWrap" style="display:${mode==='custom'?'block':'none'}"><span class="lbl">Custom daily calories</span><input id="nsCustom" type="number" value="${n.calTargetOverride||Math.round(getBW()*30)}"></div>
@@ -1072,13 +1131,14 @@ function exportExcel(){const rows=[],add=(...c)=>rows.push(c.map(csvCell).join('
   const ds=new Set([...Object.keys(state.nutri.log||{}),...Object.keys(state.calLog||{})]);[...ds].sort().forEach(d=>{const c=consumedOn(d),burned=Math.round((state.calLog||{})[d]||0);add(d,c.kcal,c.protein,burned,c.kcal-burned,calTarget(),proteinTarget());});
   add('');add('FOOD LOG');add('Date','Meal','Food','Qty','Calories','Protein (g)');
   Object.keys(state.nutri.log||{}).sort().forEach(d=>{const L=state.nutri.log[d];for(const m of ['breakfast','lunch','snack','dinner'])for(const it of (L[m]||[])){const f=foodById(it.foodId);if(f)add(d,m,f.name,it.qty,f.kcal*it.qty,f.protein*it.qty);}});
-  const blob=new Blob(['﻿'+rows.join('\n')],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='gymtrack-export-'+dateStr(new Date())+'.csv';a.click();toast('Exported — opens in Excel');}
+  const blob=new Blob(['﻿'+rows.join('\n')],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='gymtrack-export-'+dateStr(new Date())+'.csv';a.click();toast('Exported, opens in Excel');}
 const _ecb=$('#exportCsvBtn');if(_ecb)_ecb.addEventListener('click',exportExcel);
 
 /* ===== exercise library (browse + add per muscle) ===== */
-const DAY_GROUPS={mon:['Chest','Triceps'],tue:['Back','Biceps'],wed:['Shoulders','Abs'],thu:['Triceps','Biceps','Abs'],fri:['Quads','Hamstrings','Glutes','Calves','Abs'],sat:['Biceps','Triceps','Abs'],sun:['Abs','Calves']};
+const PART_LIB={chest:['Chest'],back:['Back'],shoulders:['Shoulders','Traps'],biceps:['Biceps'],triceps:['Triceps'],forearms:['Forearms'],legs:['Quads','Hamstrings','Glutes','Calves'],abs:['Abs'],cardio:[]};
+function dayLibGroups(d){return dayParts(d).flatMap(p=>PART_LIB[p]||[]);}
 const BASE_GROUP={chest:'Chest',biceps:'Biceps',triceps:'Triceps',delts:'Shoulders',reardelts:'Shoulders',traps:'Traps',lats:'Back',abs:'Abs',obliques:'Abs',quads:'Quads',hams:'Hamstrings',glutes:'Glutes',calves:'Calves',forearms:'Forearms'};
-function bestDayForGroup(g){for(const d of DAYS)if((DAY_GROUPS[d]||[]).includes(g))return d;return todayKey();}
+function bestDayForGroup(g){for(const d of DAYS)if(dayLibGroups(d).includes(g))return d;return todayKey();}
 let libTargetDay=null,libGroups=[];
 function openLibrary(opts){libGroups=opts.groups||[];libTargetDay=opts.day||activeDay;renderLibrary();openSheet('#librarySheet');}
 function renderLibrary(){
@@ -1091,7 +1151,7 @@ function renderLibrary(){
      <button class="libadd ${already?'added':''}" data-libadd="${x.id}">${already?'✓':'＋'}</button></div>`;}).join('');
   $('#libraryBody').innerHTML=`<div class="dtitle">Exercise library</div>
     <p class="muted" style="margin:6px 0 10px">Extra ${libGroups.join(' / ')} moves. Tap one to preview, or ＋ to add. ⭐ = recommended for you.</p>
-    <div class="field"><span class="lbl">Add to which day?</span><select id="libDay">${DAYS.map(d=>`<option value="${d}" ${d===libTargetDay?'selected':''}>${FULLDAY[d]} — ${focusMap()[d]}</option>`).join('')}</select></div>
+    <div class="field"><span class="lbl">Add to which day?</span><select id="libDay">${DAYS.map(d=>`<option value="${d}" ${d===libTargetDay?'selected':''}>${FULLDAY[d]}: ${focusMap()[d]}</option>`).join('')}</select></div>
     <div class="list" style="padding:12px 0 0">${rows||'<div class="center">No library exercises here.</div>'}</div><div style="height:14px"></div>`;
   if($('#libDay'))$('#libDay').addEventListener('change',()=>{libTargetDay=$('#libDay').value;renderLibrary();});
 }
@@ -1101,20 +1161,20 @@ function addLibToDay(libId,day){const x=EXLIB.find(e=>e.id===libId);if(!x)return
   save();renderLibrary();if(activeView==='workout')render();toast(x.name+' → '+FULLDAY[day]+' ✓');}
 function openLibDetail(libId){const x=EXLIB.find(e=>e.id===libId);if(!x)return;const im=EXIMG[x.id];
   const demo=im?`<img class="demoimg" id="frameA" src="${im[0]}">${im[1]?`<img class="demoimg" id="frameB" src="${im[1]}" style="opacity:0">`:''}`:animSVG('generic');
-  $('#libDetailBody').innerHTML=`<div class="demo">${demo}</div><div class="cap">Real demo — start ⇄ finish (loops).</div>
+  $('#libDetailBody').innerHTML=`<div class="demo">${demo}</div><div class="cap">Real demo: start ⇄ finish (loops).</div>
     <div class="dtitle">${esc(x.name)}${x.rec?' <span class="recbadge">⭐ Recommended</span>':''}</div>
     <div class="dmeta">${x.muscles.map(m=>{const c=musColor(m);return `<span class="pill" style="color:${c};background:${c}22;border:1px solid ${c}55">${esc(m)}</span>`;}).join('')}<span class="pill">${x.type}</span></div>
     <div class="musclewrap" style="margin-top:10px">${bodyMap(x.muscles)}<div class="mlegend"><span><i class="dotleg" style="background:#ff6a3d"></i>Primary</span><span><i class="dotleg" style="background:#9c5a3c"></i>Secondary</span></div></div>
     <div class="sectlbl">How to do it</div><ol class="steps">${(x.steps||[]).map(s=>`<li>${esc(s)}</li>`).join('')}</ol>
     <button class="btn vid" id="libVid">▶ Watch video demo</button>
-    <div class="field"><span class="lbl">Add to which day?</span><select id="libDetDay">${DAYS.map(d=>`<option value="${d}" ${d===libTargetDay?'selected':''}>${FULLDAY[d]} — ${focusMap()[d]}</option>`).join('')}</select></div>
+    <div class="field"><span class="lbl">Add to which day?</span><select id="libDetDay">${DAYS.map(d=>`<option value="${d}" ${d===libTargetDay?'selected':''}>${FULLDAY[d]}: ${focusMap()[d]}</option>`).join('')}</select></div>
     <button class="btn primary" id="libAddBtn">＋ Add to my plan</button>`;
   openSheet('#libDetailSheet');startDemo(im);
   $('#libVid').onclick=()=>window.open('https://www.youtube.com/results?search_query='+encodeURIComponent(x.name+' exercise form'),'_blank');
   $('#libAddBtn').onclick=()=>{addLibToDay(x.id,$('#libDetDay').value);closeOne('#libDetailSheet');};
 }
 $('#librarySheet').addEventListener('click',ev=>{const ad=ev.target.closest('[data-libadd]');if(ad){addLibToDay(ad.dataset.libadd,libTargetDay);return;}const it=ev.target.closest('[data-lib]');if(it)openLibDetail(it.dataset.lib);});
-const _bb=$('#browseBtn');if(_bb)_bb.addEventListener('click',()=>openLibrary({groups:DAY_GROUPS[activeDay]||[],day:activeDay}));
+const _bb=$('#browseBtn');if(_bb)_bb.addEventListener('click',()=>{const g=dayLibGroups(activeDay);openLibrary({groups:g.length?g:[...new Set(Object.values(PART_LIB).flat())],day:activeDay});});
 /* ===== workout history ===== */
 function logWorkout(e,on){const ds=dateStr(new Date());state.workoutLog=state.workoutLog||{};const arr=state.workoutLog[ds]=state.workoutLog[ds]||[];
   if(on){if(!arr.some(w=>w.id===e.id))arr.push({id:e.id,name:e.name,weight:(state.ex[e.id]||{}).weight==null?null:state.ex[e.id].weight,m:(e.muscles||[])[0]||''});}
