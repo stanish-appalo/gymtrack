@@ -11,6 +11,7 @@
 <link rel="apple-touch-icon" href="assets/icon-180.png" />
 <link rel="icon" type="image/png" href="assets/icon-192.png" />
 <title>GymTrack: Personal Workout</title>
+<link rel="stylesheet" href="assets/muscle-map.css" />
 <style>
   :root{
     --bg:#0f1115; --bg2:#15171c; --card:#1b1e25; --card2:#22262f;
@@ -309,6 +310,7 @@
 
 <script src="assets/exmap.js"></script>
 <script src="assets/library.js"></script>
+<script src="assets/muscle-map.js"></script>
 <script>
 const EXIMG = window.EXIMG || {};
 const EXLIB = window.EXLIB || [];
@@ -533,43 +535,16 @@ const MUSCLE_MAP={
  'Chest':['chest'],'Upper Chest':['chest'],'Triceps':['triceps-l','triceps-r'],
  'Shoulders':['delts-l','delts-r','reardelts-l','reardelts-r'],'Side Delts':['delts-l','delts-r'],'Front Delts':['delts-l','delts-r'],
  'Rear Delts':['reardelts-l','reardelts-r'],'Traps':['traps'],
- 'Lats':['lats-l','lats-r'],'Back':['lats-l','lats-r','traps'],'Upper Back':['traps','reardelts-l','reardelts-r'],
+ 'Lower Back':['lowerback'],'Middle Back':['traps','lats-l','lats-r'],'Lats':['lats-l','lats-r'],'Back':['lats-l','lats-r','traps'],'Upper Back':['traps','reardelts-l','reardelts-r'],
  'Biceps':['biceps-l','biceps-r'],'Forearms':['forearms-l','forearms-r'],
  'Core':['abs'],'Abs':['abs'],'Lower Abs':['abs'],'Obliques':['obliques-l','obliques-r'],
  'Quads':['quads-l','quads-r'],'Glutes':['glutes-l','glutes-r'],'Hamstrings':['hams-l','hams-r'],
  'Calves':['calvesf-l','calvesf-r','calvesb-l','calvesb-r'],'Fat-loss':[]
 };
 function bodyMap(muscles){
-  const prim=new Set(),sec=new Set();
-  (muscles||[]).forEach((m,i)=>{(MUSCLE_MAP[m]||[]).forEach(r=>(i===0?prim:sec).add(r));});
-  const c=id=>prim.has(id)?'mm hot':sec.has(id)?'mm warm':'mm';
-  return `<svg viewBox="0 0 260 250" class="bodymap">
-    <g class="mm-body">
-      <circle cx="70" cy="24" r="13"/><rect x="55" y="38" width="30" height="76" rx="12"/><rect x="60" y="108" width="20" height="60" rx="9"/>
-      <rect x="40" y="48" width="9" height="60" rx="4"/><rect x="91" y="48" width="9" height="60" rx="4"/>
-      <rect x="57" y="150" width="8" height="60" rx="4"/><rect x="75" y="150" width="8" height="60" rx="4"/>
-      <circle cx="190" cy="24" r="13"/><rect x="175" y="38" width="30" height="76" rx="12"/><rect x="180" y="108" width="20" height="60" rx="9"/>
-      <rect x="160" y="48" width="9" height="60" rx="4"/><rect x="211" y="48" width="9" height="60" rx="4"/>
-      <rect x="177" y="150" width="8" height="60" rx="4"/><rect x="195" y="150" width="8" height="60" rx="4"/>
-    </g>
-    <ellipse class="${c('delts-l')}" cx="50" cy="48" rx="9" ry="7"/><ellipse class="${c('delts-r')}" cx="90" cy="48" rx="9" ry="7"/>
-    <path class="${c('chest')}" d="M55 52 h12 v12 q-6 4 -12 0 z"/><path class="${c('chest')}" d="M73 52 h12 v12 q-6 4 -12 0 z"/>
-    <ellipse class="${c('biceps-l')}" cx="44" cy="66" rx="6" ry="11"/><ellipse class="${c('biceps-r')}" cx="96" cy="66" rx="6" ry="11"/>
-    <ellipse class="${c('forearms-l')}" cx="42" cy="92" rx="5" ry="12"/><ellipse class="${c('forearms-r')}" cx="98" cy="92" rx="5" ry="12"/>
-    <rect class="${c('abs')}" x="60" y="70" width="20" height="34" rx="5"/>
-    <rect class="${c('obliques-l')}" x="54" y="74" width="6" height="26" rx="3"/><rect class="${c('obliques-r')}" x="80" y="74" width="6" height="26" rx="3"/>
-    <ellipse class="${c('quads-l')}" cx="63" cy="135" rx="8" ry="22"/><ellipse class="${c('quads-r')}" cx="77" cy="135" rx="8" ry="22"/>
-    <ellipse class="${c('calvesf-l')}" cx="61" cy="190" rx="6" ry="15"/><ellipse class="${c('calvesf-r')}" cx="79" cy="190" rx="6" ry="15"/>
-    <ellipse class="${c('traps')}" cx="190" cy="46" rx="15" ry="9"/>
-    <ellipse class="${c('reardelts-l')}" cx="170" cy="50" rx="8" ry="7"/><ellipse class="${c('reardelts-r')}" cx="210" cy="50" rx="8" ry="7"/>
-    <ellipse class="${c('triceps-l')}" cx="164" cy="68" rx="6" ry="12"/><ellipse class="${c('triceps-r')}" cx="216" cy="68" rx="6" ry="12"/>
-    <path class="${c('lats-l')}" d="M178 60 q-12 14 -4 34 q10 -6 10 -20 z"/><path class="${c('lats-r')}" d="M202 60 q12 14 4 34 q-10 -6 -10 -20 z"/>
-    <rect class="${c('lowerback')}" x="182" y="96" width="16" height="16" rx="4"/>
-    <ellipse class="${c('glutes-l')}" cx="183" cy="120" rx="10" ry="11"/><ellipse class="${c('glutes-r')}" cx="197" cy="120" rx="10" ry="11"/>
-    <ellipse class="${c('hams-l')}" cx="183" cy="158" rx="8" ry="22"/><ellipse class="${c('hams-r')}" cx="197" cy="158" rx="8" ry="22"/>
-    <ellipse class="${c('calvesb-l')}" cx="183" cy="195" rx="6" ry="15"/><ellipse class="${c('calvesb-r')}" cx="197" cy="195" rx="6" ry="15"/>
-    <text x="70" y="240" class="bmlbl">FRONT</text><text x="190" y="240" class="bmlbl">BACK</text>
-  </svg>`;
+  const primary=new Set(),secondary=new Set();
+  (muscles||[]).forEach((m,i)=>(MUSCLE_MAP[m]||[]).forEach(r=>(i===0?primary:secondary).add(base(r))));
+  return MuscleAtlas.render({primary,secondary});
 }
 
 /* ===== charts ===== */
@@ -801,7 +776,7 @@ function desiredNavLevel(){return (activeView!=='workout'?1:0)+(document.querySe
 function syncNav(fromPop){const desired=desiredNavLevel();
   if(desired>navLevel){history.pushState({gtLvl:desired},'');navLevel=desired;}
   else if(desired<navLevel){navLevel=desired;if(!fromPop)history.back();}}
-window.addEventListener('popstate',()=>{navLevel=Math.max(0,navLevel-1);
+window.addEventListener('popstate',ev=>{if((ev.state?.gtLvl||0)===navLevel)return;navLevel=Math.max(0,navLevel-1);
   if(document.querySelector('.sheet.show'))closeSheets(true);
   else if(activeView!=='workout')setView('workout',true);});
 function openSheet(sel){$('#scrim').classList.add('show');$(sel).classList.add('show');syncNav(false);}
@@ -1081,45 +1056,42 @@ function applyDayTheme(){const t=DAY_THEME[new Date().getDay()];document.body.st
 const MUS_COLOR={'Chest':'#ff6a3d','Upper Chest':'#ff8a4c','Triceps':'#f59e0b','Biceps':'#8b5cf6','Shoulders':'#3b82f6','Side Delts':'#3b82f6','Front Delts':'#60a5fa','Rear Delts':'#06b6d4','Traps':'#14b8a6','Lats':'#10b981','Back':'#10b981','Upper Back':'#34d399','Forearms':'#fb923c','Core':'#ec4899','Abs':'#ec4899','Lower Abs':'#f472b6','Obliques':'#f43f5e','Quads':'#eab308','Glutes':'#a855f7','Hamstrings':'#84cc16','Calves':'#22d3ee','Fat-loss':'#94a3b8'};
 function musColor(m){return MUS_COLOR[m]||'#94a3b8';}
 /* ===== muscles view ===== */
-const GROUP_NAME={chest:'Chest',biceps:'Biceps',triceps:'Triceps',delts:'Shoulders',reardelts:'Rear Delts',traps:'Traps',lats:'Back / Lats',abs:'Abs / Core',obliques:'Obliques',quads:'Quads',hams:'Hamstrings',glutes:'Glutes',calves:'Calves',forearms:'Forearms'};
-function base(id){return id.replace(/-(l|r)$/,'');}
-function muscleMapClickable(sel){const c=id=>base(id)===sel?'mm hot':'mm clk';const D=b=>b==='lowerback'?'':`data-mus="${b}"`;
-  return `<svg viewBox="0 0 260 250" class="bodymap">
-   <g class="mm-body"><circle cx="70" cy="24" r="13"/><rect x="55" y="38" width="30" height="76" rx="12"/><rect x="60" y="108" width="20" height="60" rx="9"/>
-    <rect x="40" y="48" width="9" height="60" rx="4"/><rect x="91" y="48" width="9" height="60" rx="4"/><rect x="57" y="150" width="8" height="60" rx="4"/><rect x="75" y="150" width="8" height="60" rx="4"/>
-    <circle cx="190" cy="24" r="13"/><rect x="175" y="38" width="30" height="76" rx="12"/><rect x="180" y="108" width="20" height="60" rx="9"/>
-    <rect x="160" y="48" width="9" height="60" rx="4"/><rect x="211" y="48" width="9" height="60" rx="4"/><rect x="177" y="150" width="8" height="60" rx="4"/><rect x="195" y="150" width="8" height="60" rx="4"/></g>
-   <ellipse class="${c('delts-l')}" ${D('delts')} cx="50" cy="48" rx="9" ry="7"/><ellipse class="${c('delts-r')}" ${D('delts')} cx="90" cy="48" rx="9" ry="7"/>
-   <path class="${c('chest')}" ${D('chest')} d="M55 52 h12 v12 q-6 4 -12 0 z"/><path class="${c('chest')}" ${D('chest')} d="M73 52 h12 v12 q-6 4 -12 0 z"/>
-   <ellipse class="${c('biceps-l')}" ${D('biceps')} cx="44" cy="66" rx="6" ry="11"/><ellipse class="${c('biceps-r')}" ${D('biceps')} cx="96" cy="66" rx="6" ry="11"/>
-   <ellipse class="${c('forearms-l')}" ${D('forearms')} cx="42" cy="92" rx="5" ry="12"/><ellipse class="${c('forearms-r')}" ${D('forearms')} cx="98" cy="92" rx="5" ry="12"/>
-   <rect class="${c('abs')}" ${D('abs')} x="60" y="70" width="20" height="34" rx="5"/>
-   <rect class="${c('obliques-l')}" ${D('obliques')} x="54" y="74" width="6" height="26" rx="3"/><rect class="${c('obliques-r')}" ${D('obliques')} x="80" y="74" width="6" height="26" rx="3"/>
-   <ellipse class="${c('quads-l')}" ${D('quads')} cx="63" cy="135" rx="8" ry="22"/><ellipse class="${c('quads-r')}" ${D('quads')} cx="77" cy="135" rx="8" ry="22"/>
-   <ellipse class="${c('calvesf-l')}" ${D('calves')} cx="61" cy="190" rx="6" ry="15"/><ellipse class="${c('calvesf-r')}" ${D('calves')} cx="79" cy="190" rx="6" ry="15"/>
-   <ellipse class="${c('traps')}" ${D('traps')} cx="190" cy="46" rx="15" ry="9"/>
-   <ellipse class="${c('reardelts-l')}" ${D('reardelts')} cx="170" cy="50" rx="8" ry="7"/><ellipse class="${c('reardelts-r')}" ${D('reardelts')} cx="210" cy="50" rx="8" ry="7"/>
-   <ellipse class="${c('triceps-l')}" ${D('triceps')} cx="164" cy="68" rx="6" ry="12"/><ellipse class="${c('triceps-r')}" ${D('triceps')} cx="216" cy="68" rx="6" ry="12"/>
-   <path class="${c('lats-l')}" ${D('lats')} d="M178 60 q-12 14 -4 34 q10 -6 10 -20 z"/><path class="${c('lats-r')}" ${D('lats')} d="M202 60 q12 14 4 34 q-10 -6 -10 -20 z"/>
-   <rect class="${c('lowerback')}" x="182" y="96" width="16" height="16" rx="4"/>
-   <ellipse class="${c('glutes-l')}" ${D('glutes')} cx="183" cy="120" rx="10" ry="11"/><ellipse class="${c('glutes-r')}" ${D('glutes')} cx="197" cy="120" rx="10" ry="11"/>
-   <ellipse class="${c('hams-l')}" ${D('hams')} cx="183" cy="158" rx="8" ry="22"/><ellipse class="${c('hams-r')}" ${D('hams')} cx="197" cy="158" rx="8" ry="22"/>
-   <ellipse class="${c('calvesb-l')}" ${D('calves')} cx="183" cy="195" rx="6" ry="15"/><ellipse class="${c('calvesb-r')}" ${D('calves')} cx="197" cy="195" rx="6" ry="15"/>
-   <text x="70" y="240" class="bmlbl">FRONT</text><text x="190" y="240" class="bmlbl">BACK</text></svg>`;}
-let selMuscle=null;
-function exercisesForMuscle(b){const seen=new Set(),out=[];for(const day of DAYS)for(const e of state.plan[day]){const regs=(e.muscles||[]).flatMap(m=>MUSCLE_MAP[m]||[]).map(base);if(regs.includes(b)&&!seen.has(e.id)){seen.add(e.id);out.push({e,day});}}return out;}
-function renderMuscles(){
+const GROUP_NAME=MuscleAtlas.names;
+function base(id){return id.replace(/-(l|r)$/,'').replace(/^calves[fb]$/,'calves');}
+let selMuscle=null, muscleViewSide='front', muscleLabels=true;
+function exercisesForMuscle(b){
+  const found=new Map();
+  for(const day of DAYS)for(const e of state.plan[day]){
+    const regs=(e.muscles||[]).flatMap(m=>MUSCLE_MAP[m]||[]).map(base);
+    if(!regs.includes(b))continue;
+    if(found.has(e.id)){found.get(e.id).days.push(day);continue;}
+    found.set(e.id,{e,day,days:[day],primary:(MUSCLE_MAP[(e.muscles||[])[0]]||[]).some(r=>base(r)===b)});
+  }
+  return [...found.values()].sort((a,b)=>Number(b.primary)-Number(a.primary));
+}
+function renderMuscles(focusKey){
   const list=selMuscle?exercisesForMuscle(selMuscle):[];
-  const exHtml=!selMuscle?'<div class="center">👆 Tap a muscle on the body to see its exercises.</div>':(list.length?list.map(o=>{const e=o.e,_im=imgsFor(e),thumb=_im?`<img src="${_im[0]}">`:animSVG(e.anim),mc=musColor(e.muscles[0]||'');
-    return `<div class="ex" data-mex="${e.id}"><div class="thumb">${thumb}</div><div class="exinfo"><div class="exname">${esc(e.name)}</div><div class="exmeta"><span class="pill set">${e.sets} × ${esc(e.reps)}</span><span class="pill" style="color:${mc};background:${mc}22;border:1px solid ${mc}55">${esc(e.muscles[0]||'')}</span><span class="pill">${DLABEL[o.day]}</span></div></div></div>`;}).join('')
-    :'<div class="center">No exercises target this yet. Add one in the Workout tab.</div>');
-  $('#muscleView').innerHTML=`<div class="muscwrap"><div class="msctitle">${selMuscle?(GROUP_NAME[selMuscle]||selMuscle):'Muscle Map'}</div>
-    <div class="muscmap">${muscleMapClickable(selMuscle)}</div>
-    <div class="sectlbl">${selMuscle?('Exercises for '+(GROUP_NAME[selMuscle]||selMuscle)):'Pick a muscle'}</div>
-    <div class="list" style="padding:0">${exHtml}</div>${selMuscle&&BASE_GROUP[selMuscle]?`<button class="addbtn" data-libbrowse="${BASE_GROUP[selMuscle]}" style="margin:14px 0 0;color:var(--acc2)">＋ Browse all ${BASE_GROUP[selMuscle]} exercises</button>`:''}<div style="height:20px"></div></div>`;
+  const days=DAYS.filter(d=>list.some(o=>o.days.includes(d)));
+  const visible=muscleViewSide==='both'?Object.keys(GROUP_NAME):MuscleAtlas.regions[muscleViewSide].map(r=>r[0]);
+  const targeted=Object.keys(GROUP_NAME).filter(k=>exercisesForMuscle(k).length).length;
+  const exHtml=list.map(o=>{const e=o.e,im=imgsFor(e),thumb=im?'<img alt="" loading="lazy" src="'+im[0]+'">':animSVG(e.anim);
+    return '<button type="button" class="ex atlas-exercise" data-mex="'+esc(e.id)+'"><span class="thumb">'+thumb+'</span><span class="exinfo"><span class="exname">'+esc(e.name)+'</span><span class="exmeta"><span class="pill set">'+e.sets+' × '+esc(e.reps)+'</span><span class="pill">'+o.days.map(d=>DLABEL[d]).join(' · ')+'</span></span><span class="atlas-role">'+(o.primary?'Primary target':'Supporting muscle')+'</span></span><span aria-hidden="true">›</span></button>';
+  }).join('');
+  const detail=selMuscle?'<div class="atlas-detail-top"><div><div class="atlas-eyebrow">Selected muscle</div><h3>'+GROUP_NAME[selMuscle]+'</h3></div><button class="atlas-clear" data-mus-clear aria-label="Clear muscle selection">Clear ×</button></div><p>See how this muscle fits into your weekly plan.</p><div class="atlas-stats"><div><strong>'+list.length+'</strong><span>Exercises</span></div><div><strong>'+list.filter(o=>o.primary).length+'</strong><span>Primary targets</span></div><div><strong>'+days.length+'</strong><span>Days in plan</span></div></div>'+(days.length?'<div class="atlas-days">'+days.map(d=>'<span>'+FULLDAY[d]+'</span>').join('')+'</div>':''):
+    '<div class="atlas-eyebrow">Explore your training</div><h3>Every muscle. A clearer picture.</h3><p>Tap a muscle or choose a label below the body to explore its exercises. Your current plan targets '+targeted+' of '+Object.keys(GROUP_NAME).length+' mapped muscle groups.</p>';
+  $('#muscleView').innerHTML='<div class="muscwrap"><div class="atlas-head"><div><div class="atlas-eyebrow">Your training, mapped</div><h2>Muscle explorer</h2></div><span class="atlas-badge">'+Object.keys(GROUP_NAME).length+' muscle groups</span></div><div class="atlas-card"><div class="atlas-toolbar"><div class="atlas-views" role="group" aria-label="Body view">'+['front','back','both'].map(v=>'<button data-mus-view="'+v+'" aria-pressed="'+(v===muscleViewSide)+'">'+v[0].toUpperCase()+v.slice(1)+'</button>').join('')+'</div><button class="atlas-labels" data-mus-labels aria-pressed="'+muscleLabels+'" '+(muscleViewSide==='both'?'disabled title="Labels are available in Front or Back view"':'')+'>Labels '+(muscleLabels?'on':'off')+'</button></div><div class="atlas-stage '+(muscleViewSide==='both'?'is-both':'')+'">'+MuscleAtlas.render({view:muscleViewSide,selected:selMuscle,labels:muscleLabels,interactive:true})+'</div><div class="atlas-caption"><i></i>'+(selMuscle?GROUP_NAME[selMuscle]+' selected · tap another to explore':'Tap the body to explore a muscle')+'</div></div><div class="atlas-chips" role="group" aria-label="Choose a muscle">'+visible.map(k=>'<button class="atlas-chip" data-mus="'+k+'" aria-pressed="'+(k===selMuscle)+'">'+GROUP_NAME[k]+'</button>').join('')+'</div><div class="atlas-detail" aria-live="polite">'+detail+'</div>'+(selMuscle?'<div class="sectlbl">In your weekly plan · '+list.length+'</div><div class="list" style="padding:0">'+(exHtml||'<div class="atlas-empty">No exercises in your plan target '+GROUP_NAME[selMuscle]+'.<br>Browse the library to add one.</div>')+'</div><button class="atlas-browse" data-libbrowse="'+BASE_GROUP[selMuscle]+'">＋ Browse '+BASE_GROUP[selMuscle]+' exercises</button>':'')+'</div>';
+  if(focusKey){const target=$('#muscleView').querySelector(focusKey);if(target)target.focus({preventScroll:true});}
 }
 function openExerciseFromMuscle(id){for(const day of DAYS){const i=state.plan[day].findIndex(e=>e.id===id);if(i>=0){setView('workout');activeDay=day;render();setTimeout(()=>openDetail(i),60);return;}}}
-$('#muscleView').addEventListener('click',ev=>{const lb=ev.target.closest('[data-libbrowse]');if(lb){const g=lb.getAttribute('data-libbrowse');openLibrary({groups:[g],day:bestDayForGroup(g)});return;}const mu=ev.target.closest('[data-mus]');if(mu){selMuscle=mu.getAttribute('data-mus');renderMuscles();return;}const mx=ev.target.closest('[data-mex]');if(mx)openExerciseFromMuscle(mx.dataset.mex);});
+$('#muscleView').addEventListener('click',ev=>{
+  const view=ev.target.closest('[data-mus-view]');if(view){muscleViewSide=view.dataset.musView;renderMuscles('[data-mus-view="'+muscleViewSide+'"]');return;}
+  if(ev.target.closest('[data-mus-labels]')){muscleLabels=!muscleLabels;renderMuscles('[data-mus-labels]');return;}
+  if(ev.target.closest('[data-mus-clear]')){selMuscle=null;renderMuscles('[data-mus-view="'+muscleViewSide+'"]');return;}
+  const lb=ev.target.closest('[data-libbrowse]');if(lb){const g=lb.dataset.libbrowse;openLibrary({groups:[g],day:bestDayForGroup(g)});return;}
+  const mu=ev.target.closest('[data-mus]');if(mu){selMuscle=mu.dataset.mus;renderMuscles((mu.matches('button')?'.atlas-chip':'g')+'[data-mus="'+selMuscle+'"]');return;}
+  const mx=ev.target.closest('[data-mex]');if(mx)openExerciseFromMuscle(mx.dataset.mex);
+});
+$('#muscleView').addEventListener('keydown',ev=>{if((ev.key==='Enter'||ev.key===' ')&&ev.target.matches('g[data-mus]')){ev.preventDefault();ev.target.dispatchEvent(new MouseEvent('click',{bubbles:true}));}});
 /* ===== export to Excel (CSV) ===== */
 function csvCell(v){v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
 function exportExcel(){const rows=[],add=(...c)=>rows.push(c.map(csvCell).join(','));
@@ -1137,7 +1109,7 @@ const _ecb=$('#exportCsvBtn');if(_ecb)_ecb.addEventListener('click',exportExcel)
 /* ===== exercise library (browse + add per muscle) ===== */
 const PART_LIB={chest:['Chest'],back:['Back'],shoulders:['Shoulders','Traps'],biceps:['Biceps'],triceps:['Triceps'],forearms:['Forearms'],legs:['Quads','Hamstrings','Glutes','Calves'],abs:['Abs'],cardio:[]};
 function dayLibGroups(d){return dayParts(d).flatMap(p=>PART_LIB[p]||[]);}
-const BASE_GROUP={chest:'Chest',biceps:'Biceps',triceps:'Triceps',delts:'Shoulders',reardelts:'Shoulders',traps:'Traps',lats:'Back',abs:'Abs',obliques:'Abs',quads:'Quads',hams:'Hamstrings',glutes:'Glutes',calves:'Calves',forearms:'Forearms'};
+const BASE_GROUP={lowerback:'Back',chest:'Chest',biceps:'Biceps',triceps:'Triceps',delts:'Shoulders',reardelts:'Shoulders',traps:'Traps',lats:'Back',abs:'Abs',obliques:'Abs',quads:'Quads',hams:'Hamstrings',glutes:'Glutes',calves:'Calves',forearms:'Forearms'};
 function bestDayForGroup(g){for(const d of DAYS)if(dayLibGroups(d).includes(g))return d;return todayKey();}
 let libTargetDay=null,libGroups=[];
 function openLibrary(opts){libGroups=opts.groups||[];libTargetDay=opts.day||activeDay;renderLibrary();openSheet('#librarySheet');}
@@ -1158,7 +1130,7 @@ function renderLibrary(){
 function addLibToDay(libId,day){const x=EXLIB.find(e=>e.id===libId);if(!x)return;
   const obj={id:x.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')+'-'+Math.random().toString(36).slice(2,5),name:x.name,sets:3,reps:'12',type:x.type,anim:'generic',muscles:x.muscles.slice(),steps:(x.steps||[]).slice(),imgKey:x.id};
   state.plan[day].push(obj);if(!state.ex[obj.id])state.ex[obj.id]={weight:null,inc:defInc(obj.type),unit:'kg',loggedThisWeek:false,hitReps:false,suggestion:null,history:[]};
-  save();renderLibrary();if(activeView==='workout')render();toast(x.name+' → '+FULLDAY[day]+' ✓');}
+  save();renderLibrary();if(activeView==='workout')render();if(activeView==='muscles')renderMuscles();toast(x.name+' → '+FULLDAY[day]+' ✓');}
 function openLibDetail(libId){const x=EXLIB.find(e=>e.id===libId);if(!x)return;const im=EXIMG[x.id];
   const demo=im?`<img class="demoimg" id="frameA" src="${im[0]}">${im[1]?`<img class="demoimg" id="frameB" src="${im[1]}" style="opacity:0">`:''}`:animSVG('generic');
   $('#libDetailBody').innerHTML=`<div class="demo">${demo}</div><div class="cap">Real demo: start ⇄ finish (loops).</div>

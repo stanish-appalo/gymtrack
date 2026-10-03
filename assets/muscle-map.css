@@ -1,0 +1,52 @@
+/* Shared anatomy artwork and muscle explorer. */
+.anatomy{display:block;width:100%;height:auto;overflow:visible}
+.anatomy .body-shell{fill:#202735;stroke:#536075;stroke-width:1.2}
+.anatomy .muscle-region{stroke:#111923;stroke-width:1.5;stroke-linejoin:round;transition:opacity .18s,filter .18s}
+.anatomy .muscle-region.interactive{cursor:pointer;outline:none}
+.anatomy .muscle-region.interactive:hover,.anatomy .muscle-region.interactive:focus-visible{filter:brightness(1.15);stroke:#f5eeff;stroke-width:2}
+.anatomy .muscle-region.selected{stroke:#f1ddff;stroke-width:1.8;filter:drop-shadow(0 0 5px #c084fc66)}
+.anatomy .fibers{fill:none;stroke:#e8e3ff;stroke-width:.7;opacity:.19;pointer-events:none;stroke-linecap:round}
+.anatomy .tendon{fill:none;stroke:#8794a9;stroke-width:1;opacity:.45;pointer-events:none}
+.anatomy .map-label{font:600 10px -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;fill:#aeb8ca}
+.anatomy .map-label.active{fill:#eedbff}
+.anatomy .leader{fill:none;stroke:#627086;stroke-width:.7;opacity:.65}
+.anatomy .view-label{font:700 9px -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;letter-spacing:2px;fill:#8794a9;text-anchor:middle}
+.musclewrap .anatomy{max-height:300px}
+.atlas-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:6px 0 16px}
+.atlas-eyebrow{font-size:10px;letter-spacing:1.8px;font-weight:800;color:#c4a0ef;text-transform:uppercase}
+.atlas-head h2{font-size:25px;letter-spacing:-.8px;margin:4px 0 0}
+.atlas-badge{border:1px solid #aa7de33b;background:#b781ed12;color:#ceb3ef;padding:7px 9px;border-radius:9px;font-size:10px;white-space:nowrap}
+.atlas-card{border:1px solid #343044;border-radius:22px;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,#30273f 0%,#1a1d27 56%,#171a22 100%)}
+.atlas-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 14px 0}
+.atlas-views{display:flex;gap:3px;padding:3px;background:#10131b;border:1px solid #33303e;border-radius:11px}
+.atlas-views button,.atlas-labels{border:0;background:transparent;color:#a7acba;font-size:12px;font-weight:600;cursor:pointer;min-height:36px;padding:7px 13px;border-radius:8px;font-family:inherit}
+.atlas-views button[aria-pressed=true]{background:#c4a0ef;color:#21132e;box-shadow:0 2px 8px #0003}
+.atlas-labels{font-size:11px;padding:7px 8px;border:1px solid #484054}
+.atlas-labels[aria-pressed=true]{color:#dfc5fc;background:#b781ed14}
+.atlas-stage{padding:4px 4px 0;background-image:radial-gradient(#8794a915 .8px,transparent .8px);background-size:18px 18px}
+.atlas-stage .anatomy{height:420px;max-height:57vh;min-height:300px}
+.atlas-stage.is-both .anatomy{height:335px;min-height:240px}
+.atlas-caption{display:flex;justify-content:center;align-items:center;gap:8px;padding:12px;font-size:11px;color:#acb2c3;border-top:1px solid #ffffff08}
+.atlas-caption i{height:7px;width:7px;border-radius:50%;background:#c4a0ef;box-shadow:0 0 9px #c4a0ef55}
+.atlas-chips{display:flex;gap:7px;overflow-x:auto;padding:14px 0 12px;scrollbar-width:thin;scrollbar-color:#554464 transparent}
+.atlas-chip{flex:0 0 auto;min-height:38px;border:1px solid var(--line);border-radius:20px;background:var(--card);color:#adb5c6;padding:8px 13px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer}
+.atlas-chip[aria-pressed=true]{background:#c4a0ef1a;border-color:#b78ae2;color:#e2c8ff}
+.atlas-detail{border:1px solid #3e344c;border-radius:18px;padding:16px;background:linear-gradient(120deg,#2b2235,#1b1e25);margin-top:2px}
+.atlas-detail-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.atlas-detail h3{margin:3px 0 5px;font-size:21px;letter-spacing:-.4px}
+.atlas-detail p{color:#aeb5c6;font-size:12px;line-height:1.6;margin:0}
+.atlas-clear{background:#ffffff08;border:1px solid #ffffff15;border-radius:9px;color:#c8c3d1;padding:8px 10px;min-height:36px;cursor:pointer}
+.atlas-stats{display:flex;gap:24px;margin-top:14px;padding-top:12px;border-top:1px solid #ffffff0c}
+.atlas-stats strong{font-size:20px;color:#e2c8ff;display:block}
+.atlas-stats span{font-size:10px;color:#aeb5c6}
+.atlas-days{margin-top:12px;display:flex;gap:5px;flex-wrap:wrap}
+.atlas-days span{font-size:10px;padding:4px 7px;border-radius:6px;background:#c4a0ef12;color:#d7b9f6}
+.atlas-exercise{width:100%;text-align:left;color:inherit;font:inherit;cursor:pointer}
+.atlas-role{font-size:10px;color:#cdb2eb;margin-top:5px}
+.atlas-exercise .exname,.atlas-exercise .atlas-role{display:block}
+.atlas-labels:disabled{opacity:.4;cursor:default}
+.atlas-empty{padding:18px 8px;color:#aeb5c6;font-size:12px;line-height:1.6;text-align:center}
+.atlas-browse{width:100%;margin:12px 0 20px;padding:14px;border:1px solid #8d62b3;border-radius:12px;background:#c4a0ef17;color:#e1c3ff;font-weight:700;cursor:pointer}
+#muscleView button:focus-visible{outline:2px solid #dfbaff;outline-offset:3px}
+@media(max-width:360px){.atlas-toolbar{padding:10px 10px 0}.atlas-views button{padding:7px 10px}.atlas-head h2{font-size:23px}.atlas-stats{gap:18px}}
+@media(prefers-reduced-motion:reduce){.anatomy .muscle-region{transition:none}}

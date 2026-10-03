@@ -7,7 +7,7 @@ A personal, offline-first **workout + nutrition + progress** tracker. Single-pag
 ## Features
 - **Workout** plan Mon to Sun with daily color themes, check-off, and progressive-overload weight suggestions.
 - **Swappable days**: tap a day, then tap body parts (Chest, Legs, Abs...) to choose what you train. Pick several and their exercises appear below.
-- **Muscles** tab: interactive body map; tap a muscle to see (and add) exercises for it.
+- **Muscles** tab: detailed interactive anatomy with front, back, and combined views, optional labels, and 15 selectable muscle groups. See primary/supporting exercises and training days, or add exercises from the library. The same artwork highlights targets in exercise details and works offline.
 - **Exercise library**: 70+ extra exercises with real demo photos + ⭐ recommended picks.
 - **Food** tracker: protein & calorie targets that scale with your body weight, a recomp coach, and a big food database (incl. Indian dishes, junk food & restaurant meals).
 - **History**: detailed day-by-day log of what you trained and ate.
