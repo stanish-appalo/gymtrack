@@ -1,6 +1,6 @@
 // GymTrack service worker: offline support (only caches successful responses)
-const CACHE = 'gymtrack-v7';
-const CORE = ['./', 'index.html', 'manifest.webmanifest', 'assets/exmap.js', 'assets/library.js', 'assets/muscle-map.js', 'assets/muscle-map.css', 'assets/theme.css', 'assets/insights.js', 'assets/dashboard.js', 'assets/icon-192.png', 'assets/icon-512.png', 'assets/icon-180.png'];
+const CACHE = 'gymtrack-v8';
+const CORE = ['./', 'index.html', 'manifest.webmanifest', 'assets/exmap.js', 'assets/library.js', 'assets/muscle-map.js', 'assets/muscle-map.css', 'assets/theme.css', 'assets/insights.js', 'assets/dashboard.js', 'assets/extras.js', 'assets/extras.css', 'assets/icon-192.png', 'assets/icon-512.png', 'assets/icon-180.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));

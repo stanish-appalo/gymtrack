@@ -1,0 +1,45 @@
+/* GymTrack extras: search, sets/reps editor, timer, drag, past log */
+.toast.act{pointer-events:auto;display:flex;align-items:center;gap:12px}
+.undo{border:none;background:#7750be;color:#fff;font-weight:700;font-size:12px;padding:6px 12px;border-radius:20px;cursor:pointer}
+
+/* sets and reps editor */
+.srwrap{display:flex;gap:10px;margin:12px 0 2px}
+.srbox{flex:1;min-width:0}
+.srbox .stepper button{width:40px}
+.srbox .stepper input{font-size:16px;min-width:0}
+.srnote{font-size:11.5px;margin:6px 0 0}
+
+/* search + A to Z */
+.libsearch input{font-size:16px;padding:13px 14px;border-radius:14px;background:#141418}
+.libscope{margin-top:10px}
+.azbar{display:flex;flex-wrap:wrap;gap:4px;margin:14px 0 2px}
+.azbar button{min-width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--acc2);font-weight:700;font-size:12px;cursor:pointer;padding:0 6px}
+.azhead{font-size:12px;font-weight:800;color:var(--acc2);letter-spacing:1px;margin:8px 2px -4px;scroll-margin-top:12px}
+.recbadge.plan{background:#ffffff14;color:var(--mut)}
+
+/* drag to reorder */
+.grip{display:none;align-self:stretch;align-items:center;padding:0 4px 0 2px;font-size:20px;color:var(--mut2);cursor:grab;touch-action:none;user-select:none}
+body.editing .grip{display:flex}
+.ex.dragging{position:relative;z-index:5;box-shadow:0 14px 34px #000a;border-color:var(--acc);transition:none!important}
+body.dragmode .ex:not(.dragging){transition:transform .15s ease}
+body.dragmode{user-select:none;-webkit-user-select:none}
+
+/* timer */
+.timerfab{position:fixed;z-index:37;right:max(16px,calc(50% - 264px));bottom:calc(98px + env(safe-area-inset-bottom));height:46px;min-width:46px;padding:0 13px;border-radius:23px;border:1px solid #ffffff1a;background:#1f1d26ee;color:var(--txt);display:flex;align-items:center;justify-content:center;gap:6px;font-size:18px;box-shadow:0 8px 24px #0008;backdrop-filter:blur(14px);cursor:pointer}
+.timerfab.on{background:var(--grad);border-color:transparent}
+.timerfab .tft{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+.timerfab .tft:empty{display:none}
+.tmodes{margin-top:12px}
+.tbig{font-size:68px;font-weight:700;text-align:center;letter-spacing:-2px;margin:18px 0 12px;font-variant-numeric:tabular-nums}
+.tpresets{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-bottom:12px}
+
+/* past workouts */
+.pastbtn{margin:0 0 14px;width:100%;color:var(--acc2)}
+.hedit{float:right;margin-left:8px;width:28px;height:26px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--mut);cursor:pointer;font-size:12px}
+.prow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.prow .exname{font-size:14px}
+.pin{display:flex;gap:8px;margin-top:6px}
+.pin label{flex:1;font-size:10.5px;color:var(--mut);display:flex;flex-direction:column;gap:3px}
+.pin input{padding:8px;font-size:15px;border-radius:10px}
+.pres{display:block;width:100%;text-align:left;padding:11px 12px;margin-top:6px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--txt);font-size:14px;cursor:pointer}
+

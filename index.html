@@ -229,6 +229,7 @@
   .nutri.editing .ftile .ed{display:grid}
 </style>
 <link rel="stylesheet" href="assets/theme.css" />
+<link rel="stylesheet" href="assets/extras.css" />
 </head>
 <body>
 <div class="app">
@@ -595,17 +596,31 @@ function rollWeek(s){const now=weekKey(new Date());
         x.suggestion=x.hitReps?+(x.weight+(x.inc||2.5)).toFixed(2):x.weight;}
       x.loggedThisWeek=false;x.hitReps=false;}
     s.checks={};s.weekStart=now;}}
+function normalizeState(s){s.plan=s.plan||buildDefault();for(const d of DAYS)s.plan[d]=s.plan[d]||[];s.checks=s.checks||{};s.bw=s.bw||[];s.calLog=s.calLog||{};s.profile=s.profile||{height:null,bodyWeight:null};s.planMode=s.planMode||'5day';s.trainDays=(s.trainDays&&s.trainDays.length===4)?s.trainDays:DEFAULT_TRAIN_DAYS.slice();s.settings=Object.assign({restSec:90,autoRest:true},s.settings||{});ensureEx(s);ensureNutri(s);rollWeek(s);return s;}
 function load(){
-  try{const raw=localStorage.getItem(KEY);if(raw){const s=JSON.parse(raw);s.plan=s.plan||buildDefault();s.bw=s.bw||[];s.calLog=s.calLog||{};s.profile=s.profile||{height:null,bodyWeight:null};s.planMode=s.planMode||'5day';s.trainDays=(s.trainDays&&s.trainDays.length===4)?s.trainDays:DEFAULT_TRAIN_DAYS.slice();ensureEx(s);ensureNutri(s);rollWeek(s);return s;}}catch(e){console.warn(e);}
-  const s={plan:buildDefault(),ex:{},checks:{},bw:[],calLog:{},profile:{height:null,bodyWeight:null},planMode:'5day',trainDays:DEFAULT_TRAIN_DAYS.slice(),weekStart:weekKey(new Date())};ensureEx(s);ensureNutri(s);return s;}
+  try{const raw=localStorage.getItem(KEY);if(raw)return normalizeState(JSON.parse(raw));}catch(e){console.warn(e);}
+  return normalizeState({plan:buildDefault(),ex:{},checks:{},bw:[],calLog:{},profile:{height:null,bodyWeight:null},planMode:'5day',trainDays:DEFAULT_TRAIN_DAYS.slice(),weekStart:weekKey(new Date())});}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){toast('⚠ Could not save');}}
 
 /* ===== calories ===== */
-function parseMin(s){const m=String(s).match(/(\d+)/);return m?+m[1]:0;}
-function estCalW(e,w){const bw=getBW();
-  if(e.type==='cardio'){const min=parseMin(e.reps)||15,met=/hiit|interval|run/i.test(e.name)?9:6.5;return Math.round(met*bw*min/60);}
-  const min=(e.sets||3)*1.3,met=e.type==='compound'?6:e.type==='isolation'?4.5:e.type==='core'?4:5,load=1+Math.min((w||0)/bw,2)*0.2;
+// numbers in a reps/time string; a range like "8 to 10" or "8-10" averages to 9
+function repNums(s){const t=String(s||'').toLowerCase(),n=(t.match(/\d+(\.\d+)?/g)||[]).map(Number);
+  if(!n.length)return null;return n.length>1&&/(to|-|\/)/.test(t.replace(/\/\s*(leg|side|arm)/,''))?(n[0]+n[1])/2:n[0];}
+function parseMin(s){const v=repNums(s);return v==null?0:v;}
+// seconds of work in one set: timed sets use the time, rep sets ~3 s per rep, per-side counts double
+function setSeconds(reps){const t=String(reps||'').toLowerCase();
+  if(/fail/.test(t))return 40;
+  const v=repNums(t);if(v==null)return 30;
+  let sec=/min/.test(t)?v*60:/sec|\d\s*s\b/.test(t)?v:v*3;
+  if(/(leg|side|arm)/.test(t)&&!/min|sec/.test(t))sec*=2;
+  return sec;}
+function estCalW(e,w){const bw=getBW(),sets=Math.max(1,+e.sets||1);
+  if(e.type==='cardio'){const min=(parseMin(e.reps)||15)*sets,met=/hiit|interval|run/i.test(e.name)?9:6.5;return Math.round(met*bw*min/60);}
+  // per set: the work itself plus ~35 s of setup and breathing
+  const min=sets*(setSeconds(e.reps)+35)/60,met=e.type==='compound'?6:e.type==='isolation'?4.5:e.type==='core'?4:5,load=1+Math.min((w||0)/bw,2)*0.2;
   return Math.round(met*bw*(min/60)*load);}
+// step every number in "12", "8 to 10" or "45 sec" (timed sets move 5 s at a time)
+function bumpReps(str,dir){const t=String(str||'');if(!/\d/.test(t))return dir>0?'12':t;const step=/sec/i.test(t)?5:1;return t.replace(/\d+/g,n=>String(Math.max(1,+n+dir*step)));}
 function estCal(e){return estCalW(e,(state.ex[e.id]||{}).weight||0);}
 
 /* ===== render ===== */
@@ -639,6 +654,7 @@ function renderList(){
       <div class="thumb">${thumb}</div>
       <div class="exinfo"><div class="exname">${esc(e.name)}</div>
         <div class="exmeta"><span class="pill set">${e.sets} × ${esc(e.reps)}</span>${chips}${wpill}${sug}${kpill}</div></div>
+      <div class="grip" data-drag="${i}" aria-label="Drag to reorder">⠿</div>
       <div class="handle"><div class="mini" data-up="${i}">▲</div><div class="mini" data-edit="${i}">✎</div><div class="mini del" data-del="${i}">✕</div><div class="mini" data-down="${i}">▼</div></div>
     </div>`;}).join('');}
 
@@ -669,12 +685,14 @@ function openDetail(i){
       <div class="calbig">🔥 <span>≈ <b id="calLive">${estCalW(e,x.weight||0)}</b> kcal this session</span></div>
       <button class="btn primary" id="saveWeight">💾 Save weight for this week</button></div>`;
   } else {
-    tracker=`<div class="calbig">🔥 <span>≈ <b>${estCal(e)}</b> kcal, just complete it and tick it off. This is your fat-burning work.</span></div>`;
+    tracker=`<div class="calbig">🔥 <span>≈ <b id="calLive">${estCal(e)}</b> kcal, just complete it and tick it off. This is your fat-burning work.</span></div>`;
   }
   $('#detailBody').innerHTML=`
     <div class="demo" id="demoBox">${demo}</div><div class="cap">${cap}</div>
     <div class="dtitle">${esc(e.name)}</div>
-    <div class="dmeta"><span class="pill set">${e.sets} sets × ${esc(e.reps)}</span></div>
+    <div class="srwrap"><div class="srbox"><span class="lbl">Sets</span><div class="stepper"><button data-sstep="-1" aria-label="Fewer sets">-</button><input id="sInput" type="number" min="1" max="20" inputmode="numeric" value="${e.sets}"><button data-sstep="1" aria-label="More sets">+</button></div></div>
+      <div class="srbox"><span class="lbl">${/sec|min/i.test(e.reps)?'Time per set':'Reps per set'}</span><div class="stepper"><button data-rstep="-1" aria-label="Less">-</button><input id="rInput" value="${esc(e.reps)}"><button data-rstep="1" aria-label="More">+</button></div></div></div>
+    <p class="muted srnote">Changing sets or reps keeps this exercise and its weight history. Calories update automatically.</p>
     ${sugHtml}${tracker}
     <div class="sectlbl">Muscles worked</div>
     <div class="dmeta">${(e.muscles||[]).map(m=>{const c=musColor(m);return `<span class="pill" style="color:${c};background:${c}22;border:1px solid ${c}55">${esc(m)}</span>`;}).join('')||'<span class="muted">Full-body / cardio</span>'}</div>
@@ -688,7 +706,17 @@ function openDetail(i){
       <button class="btn ghost" data-checkfrom="${i}">${state.checks[activeDay]&&state.checks[activeDay][e.id]?'↩ Mark not done':'✓ Mark done'}</button></div>`;
   openSheet('#detailSheet');startDemo(imgs);
   $('#vidBtn').addEventListener('click',()=>window.open('https://www.youtube.com/results?search_query='+encodeURIComponent(e.name+' exercise proper form'),'_blank'));
-  const live=()=>{const el=$('#calLive');if(el)el.textContent=estCalW(e,parseFloat($('#wInput').value)||0);};
+  const live=()=>{const el=$('#calLive'),wi=$('#wInput');if(el)el.textContent=estCalW(e,wi?(parseFloat(wi.value)||0):(x.weight||0));};
+  const applySR=()=>{const before=estCal(e),sets=Math.min(20,Math.max(1,parseInt($('#sInput').value)||1)),reps=$('#rInput').value.trim()||e.reps;
+    if(sets===e.sets&&reps===e.reps)return;e.sets=sets;e.reps=reps;
+    // an exercise already ticked off keeps its logged calories and record in step with the new numbers
+    if(state.checks[activeDay]&&state.checks[activeDay][e.id]){const ds=dayDate(activeDay);state.calLog[ds]=Math.max(0,Math.round((state.calLog[ds]||0)+estCal(e)-before));
+      const w=((state.workoutLog||{})[ds]||[]).find(w=>w.id===e.id);if(w){w.sets=sets;w.reps=reps;}}
+    save();renderSummary();renderList();live();const ht=$('#hitToggle div:last-child');if(ht)ht.textContent='I hit all '+e.sets+'×'+e.reps+' sets ✅';};
+  $('#sInput').addEventListener('change',()=>{$('#sInput').value=Math.min(20,Math.max(1,parseInt($('#sInput').value)||1));applySR();});
+  $('#rInput').addEventListener('change',applySR);
+  document.querySelectorAll('[data-sstep]').forEach(b=>b.addEventListener('click',()=>{const inp=$('#sInput');inp.value=Math.min(20,Math.max(1,(parseInt(inp.value)||1)+(+b.dataset.sstep)));applySR();}));
+  document.querySelectorAll('[data-rstep]').forEach(b=>b.addEventListener('click',()=>{const inp=$('#rInput');inp.value=bumpReps(inp.value,+b.dataset.rstep);applySR();}));
   $('#saveWeight')&&$('#saveWeight').addEventListener('click',()=>{const v=parseFloat($('#wInput').value);
     x.weight=isNaN(v)?null:v;x.loggedThisWeek=x.weight!=null;x.hitReps=$('#hitToggle').classList.contains('on');
     if(x.suggestion!=null&&x.weight!=null&&x.weight>=x.suggestion)x.suggestion=null;save();render();closeSheets();toast('Saved 💪');});
@@ -791,14 +819,12 @@ $('#tabs').addEventListener('click',ev=>{const t=ev.target.closest('[data-day]')
 $('#parts').addEventListener('click',ev=>{const b=ev.target.closest('[data-part]');if(b)togglePart(activeDay,b.dataset.part);});
 $('#list').addEventListener('click',ev=>{const t=ev.target;
   const check=t.closest('[data-check]');
-  if(check){const i=+check.dataset.check,e=state.plan[activeDay][i];state.checks[activeDay]=state.checks[activeDay]||{};
-    const now=!state.checks[activeDay][e.id];state.checks[activeDay][e.id]=now;
-    const ds=dateStr(new Date()),cal=estCal(e);state.calLog=state.calLog||{};state.calLog[ds]=Math.max(0,Math.round((state.calLog[ds]||0)+(now?cal:-cal)));
-    logWorkout(e,now);save();renderSummary();renderList();if(now)toast('🔥 +'+cal+' kcal');return;}
+  if(check){toggleCheck(+check.dataset.check);renderSummary();renderList();return;}
+  if(t.closest('[data-drag]'))return;
   const up=t.closest('[data-up]');if(up){move(+up.dataset.up,-1);return;}
   const dn=t.closest('[data-down]');if(dn){move(+dn.dataset.down,1);return;}
   const ed=t.closest('[data-edit]');if(ed){openForm(+ed.dataset.edit);return;}
-  const dl=t.closest('[data-del]');if(dl){const i=+dl.dataset.del,e=state.plan[activeDay][i];if(confirm('Delete "'+e.name+'"?')){state.plan[activeDay].splice(i,1);save();render();toast('Deleted');}return;}
+  const dl=t.closest('[data-del]');if(dl){deleteWithUndo(activeDay,+dl.dataset.del);return;}
   if(document.body.classList.contains('editing'))return;
   const op=t.closest('[data-open]');if(op)openDetail(+op.dataset.open);});
 function move(i,dir){const list=state.plan[activeDay],j=i+dir;if(j<0||j>=list.length)return;[list[i],list[j]]=[list[j],list[i]];save();renderList();}
@@ -806,10 +832,21 @@ $('#detailBody').addEventListener('click',ev=>{
   const acc=ev.target.closest('[data-accept]');
   if(acc){const x=state.ex[acc.dataset.accept];x.weight=x.suggestion;x.suggestion=null;save();render();const i=state.plan[activeDay].findIndex(e=>e.id===acc.dataset.accept);closeSheets();if(i>=0)setTimeout(()=>openDetail(i),180);toast('New weight set 🚀');return;}
   const ef=ev.target.closest('[data-editfrom]');if(ef){const idx=+ef.dataset.editfrom;closeSheets();setTimeout(()=>openForm(idx),200);return;}
-  const cf=ev.target.closest('[data-checkfrom]');if(cf){const i=+cf.dataset.checkfrom,e=state.plan[activeDay][i];state.checks[activeDay]=state.checks[activeDay]||{};
-    const now=!state.checks[activeDay][e.id];state.checks[activeDay][e.id]=now;const ds=dateStr(new Date()),cal=estCal(e);state.calLog[ds]=Math.max(0,Math.round((state.calLog[ds]||0)+(now?cal:-cal)));
-    logWorkout(e,now);save();render();closeSheets();return;}});
-$('#addBtn').addEventListener('click',()=>openForm(null));
+  const cf=ev.target.closest('[data-checkfrom]');if(cf){toggleCheck(+cf.dataset.checkfrom);render();closeSheets();return;}});
+// the calendar date of a weekday tab in the current week (future days fall back to today)
+function dayDate(d){const m=mondayOf(new Date());m.setDate(m.getDate()+DAYS.indexOf(d));const today=dateStr(new Date()),ds=dateStr(m);return ds>today?today:ds;}
+function toggleCheck(i){const e=state.plan[activeDay][i];if(!e)return;state.checks[activeDay]=state.checks[activeDay]||{};
+  const now=!state.checks[activeDay][e.id];state.checks[activeDay][e.id]=now;
+  const ds=dayDate(activeDay),cal=estCal(e);state.calLog=state.calLog||{};state.calLog[ds]=Math.max(0,Math.round((state.calLog[ds]||0)+(now?cal:-cal)));
+  logWorkout(e,now,ds);save();
+  if(now){toast('🔥 +'+cal+' kcal'+(ds!==dateStr(new Date())?' · logged for '+fmtDate(ds):''));if(navigator.vibrate)navigator.vibrate(15);if(window.onExerciseChecked)window.onExerciseChecked(e);}}
+// delete from a day with a few seconds to undo instead of a confirm dialog
+let undoT=null;
+function deleteWithUndo(day,i){const e=state.plan[day][i];if(!e)return;state.plan[day].splice(i,1);save();render();
+  const t=$('#toast');t.innerHTML=`Deleted ${esc(e.name)} <button id="undoBtn" class="undo">Undo</button>`;t.classList.add('show','act');clearTimeout(toastT);clearTimeout(undoT);
+  $('#undoBtn').onclick=()=>{state.plan[day].splice(Math.min(i,state.plan[day].length),0,e);save();render();t.classList.remove('show','act');};
+  undoT=setTimeout(()=>t.classList.remove('show','act'),4500);}
+$('#addBtn').addEventListener('click',()=>openLibrary({all:true,day:activeDay}));
 $('#editToggle').addEventListener('click',()=>{document.body.classList.toggle('editing');$('#editToggle').classList.toggle('on',document.body.classList.contains('editing'));
   toast(document.body.classList.contains('editing')?'Edit mode: reorder / edit / delete':'Done editing');});
 $('#statsBtn').addEventListener('click',()=>{renderStats();openSheet('#statsSheet');});
@@ -838,10 +875,10 @@ $('#resetWeekBtn').addEventListener('click',()=>{if(confirm('Clear all checkmark
 $('#exportBtn').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='gymtrack-backup-'+weekKey(new Date())+'.json';a.click();toast('Backup downloaded');});
 $('#importBtn').addEventListener('click',()=>$('#importFile').click());
 $('#importFile').addEventListener('change',ev=>{const f=ev.target.files[0];if(!f)return;const r=new FileReader();
-  r.onload=()=>{try{const s=JSON.parse(r.result);s.plan=s.plan||buildDefault();s.bw=s.bw||[];s.calLog=s.calLog||{};s.profile=s.profile||{height:null,bodyWeight:null};s.planMode=s.planMode||'5day';s.trainDays=(s.trainDays&&s.trainDays.length===4)?s.trainDays:DEFAULT_TRAIN_DAYS.slice();ensureEx(s);ensureNutri(s);state=s;save();render();closeSheets();toast('Backup restored ✅');}catch(e){toast('⚠ Invalid file');}};r.readAsText(f);});
+  r.onload=()=>{try{state=normalizeState(JSON.parse(r.result));save();render();closeSheets();toast('Backup restored ✅');}catch(e){toast('⚠ Invalid file');}};r.readAsText(f);});
 $('#restoreBtn').addEventListener('click',()=>{if(confirm('Restore the original 5-Day workout plan? Your saved weights & history stay.')){state.planMode='5day';state.plan=buildDefault();ensureEx(state);state.checks={};save();render();renderModeUI();closeSheets();toast('Default plan restored');}});
 $('#wipeBtn').addEventListener('click',()=>{if(confirm('Erase EVERYTHING? This cannot be undone.')){localStorage.removeItem(KEY);state=load();render();closeSheets();toast('Erased');}});
-let toastT;function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),1800);}
+let toastT;function toast(msg){const t=$('#toast');t.classList.remove('act');clearTimeout(typeof undoT!=='undefined'?undoT:0);t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),1800);}
 /* ===================== NUTRITION ===================== */
 let activeView='workout';
 let selDate=dateStr(new Date());
@@ -1116,27 +1153,56 @@ const PART_LIB={chest:['Chest'],back:['Back'],shoulders:['Shoulders','Traps'],bi
 function dayLibGroups(d){return dayParts(d).flatMap(p=>PART_LIB[p]||[]);}
 const BASE_GROUP={lowerback:'Back',chest:'Chest',biceps:'Biceps',triceps:'Triceps',delts:'Shoulders',reardelts:'Shoulders',traps:'Traps',lats:'Back',abs:'Abs',obliques:'Abs',quads:'Quads',hams:'Hamstrings',glutes:'Glutes',calves:'Calves',forearms:'Forearms'};
 function bestDayForGroup(g){for(const d of DAYS)if(dayLibGroups(d).includes(g))return d;return todayKey();}
-let libTargetDay=null,libGroups=[];
-function openLibrary(opts){libGroups=opts.groups||[];libTargetDay=opts.day||activeDay;renderLibrary();openSheet('#librarySheet');}
+let libTargetDay=null,libGroups=[],libAll=false,libQuery='';
+// library group for an exercise from the built-in plans, from its first muscle
+const MUSCLE_LIBGROUP={'Chest':'Chest','Upper Chest':'Chest','Lats':'Back','Back':'Back','Lower Back':'Back','Middle Back':'Back','Shoulders':'Shoulders','Side Delts':'Shoulders','Front Delts':'Shoulders','Rear Delts':'Shoulders','Upper Back':'Shoulders','Traps':'Traps','Biceps':'Biceps','Triceps':'Triceps','Forearms':'Forearms','Quads':'Quads','Glutes':'Glutes','Hamstrings':'Hamstrings','Calves':'Calves','Core':'Abs','Abs':'Abs','Lower Abs':'Abs','Obliques':'Abs','Fat-loss':'Cardio'};
+let _libItems=null;
+// "Leg Extension" and "Leg Extensions" count as the same exercise
+const libKey=n=>n.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean).map(w=>w.replace(/(es|s)$/,'')).join(' ');
+// every pickable exercise: the built-in plan moves (they keep their weight history) plus the photo library, one per name
+function libItems(){if(_libItems)return _libItems;const seen=new Set(),out=[];
+  for(const e of Object.values(CATALOG)){if(partOf(e)==='rest')continue;const k=libKey(e.name);if(seen.has(k))continue;seen.add(k);
+    out.push({id:'plan:'+e.id,name:e.name,group:MUSCLE_LIBGROUP[(e.muscles||[])[0]]||'Abs',muscles:e.muscles||[],type:e.type,rec:false,steps:e.steps||[],planEx:e});}
+  for(const x of EXLIB){const k=libKey(x.name);if(seen.has(k))continue;seen.add(k);out.push(x);}
+  return _libItems=out.sort((a,b)=>a.name.localeCompare(b.name));}
+function libImgs(x){return x.planEx?imgsFor(x.planEx):EXIMG[x.id];}
+function libFind(id){return libItems().find(x=>x.id===id);}
+function openLibrary(opts){libGroups=opts.groups||[];libAll=!!opts.all||!libGroups.length;libTargetDay=opts.day||activeDay;libQuery='';renderLibrary();openSheet('#librarySheet');
+  if(opts.all)setTimeout(()=>{const q=$('#libQ');if(q&&window.matchMedia&&matchMedia('(pointer:fine)').matches)q.focus();},250);}
 function renderLibrary(){
-  const items=EXLIB.filter(x=>libGroups.includes(x.group)).sort((a,b)=>(b.rec-a.rec)||a.name.localeCompare(b.name));
-  const inPlan=new Set((state.plan[libTargetDay]||[]).map(e=>e.imgKey||e.id));
-  const rows=items.map(x=>{const im=EXIMG[x.id],already=inPlan.has(x.id);
-    return `<div class="ex" data-lib="${x.id}"><div class="thumb">${im?`<img src="${im[0]}">`:animSVG('generic')}</div>
-     <div class="exinfo"><div class="exname">${esc(x.name)}${x.rec?' <span class="recbadge">⭐ Pick</span>':''}</div>
-      <div class="exmeta">${x.muscles.map(m=>{const c=musColor(m);return `<span class="pill" style="color:${c};background:${c}22;border:1px solid ${c}55">${esc(m)}</span>`;}).join('')}<span class="pill">${x.type}</span></div></div>
-     <button class="libadd ${already?'added':''}" data-libadd="${x.id}">${already?'✓':'＋'}</button></div>`;}).join('');
-  $('#libraryBody').innerHTML=`<div class="dtitle">Exercise library</div>
-    <p class="muted" style="margin:6px 0 10px">Extra ${libGroups.join(' / ')} moves. Tap one to preview, or ＋ to add. ⭐ = recommended for you.</p>
+  $('#libraryBody').innerHTML=`<div class="dtitle">${libAll&&!libGroups.length?'Add exercise':'Exercise library'}</div>
+    <div class="libsearch"><input id="libQ" type="search" autocomplete="off" placeholder="🔎 Search every exercise, A to Z" value="${esc(libQuery)}"></div>
+    ${libGroups.length?`<div class="pchips libscope"><button type="button" class="pchip ${libAll?'':'on'}" data-libscope="day">${esc(libGroups.join(' / '))}</button><button type="button" class="pchip ${libAll?'on':''}" data-libscope="all">All A to Z</button></div>`:''}
     <div class="field"><span class="lbl">Add to which day?</span><select id="libDay">${DAYS.map(d=>`<option value="${d}" ${d===libTargetDay?'selected':''}>${FULLDAY[d]}: ${focusMap()[d]}</option>`).join('')}</select></div>
-    <div class="list" style="padding:12px 0 0">${rows||'<div class="center">No library exercises here.</div>'}</div><div style="height:14px"></div>`;
-  if($('#libDay'))$('#libDay').addEventListener('change',()=>{libTargetDay=$('#libDay').value;renderLibrary();});
+    <button class="btn ghost" id="libCustom" style="margin-top:10px">✎ Create a custom exercise</button>
+    <div class="azbar" id="azBar"></div>
+    <div class="list" id="libList" style="padding:6px 0 0"></div><div style="height:14px"></div>`;
+  $('#libDay').addEventListener('change',()=>{libTargetDay=$('#libDay').value;renderLibList();});
+  $('#libQ').addEventListener('input',()=>{libQuery=$('#libQ').value;renderLibList();});
+  renderLibList();
 }
-function addLibToDay(libId,day){const x=EXLIB.find(e=>e.id===libId);if(!x)return;
-  const obj={id:x.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')+'-'+Math.random().toString(36).slice(2,5),name:x.name,sets:3,reps:'12',type:x.type,anim:'generic',muscles:x.muscles.slice(),steps:(x.steps||[]).slice(),imgKey:x.id};
+function renderLibList(){
+  const words=libQuery.toLowerCase().split(/\s+/).filter(Boolean);
+  const items=libItems().filter(x=>words.length?words.every(w=>(x.name+' '+x.muscles.join(' ')+' '+x.group).toLowerCase().includes(w)):(libAll||libGroups.includes(x.group)));
+  const inPlan=new Set((state.plan[libTargetDay]||[]).flatMap(e=>[e.imgKey,e.id,'plan:'+e.id].filter(Boolean)));
+  let letter='';const letters=[];
+  const rows=items.map(x=>{const im=libImgs(x),already=inPlan.has(x.id),L=(x.name[0]||'#').toUpperCase();
+    let head='';if(L!==letter){letter=L;letters.push(L);head=`<div class="azhead" id="az-${L}">${L}</div>`;}
+    return head+`<div class="ex" data-lib="${x.id}"><div class="thumb">${im?`<img src="${im[0]}" loading="lazy" alt="">`:animSVG('generic')}</div>
+     <div class="exinfo"><div class="exname">${esc(x.name)}${x.rec?' <span class="recbadge">⭐ Pick</span>':''}${x.planEx?' <span class="recbadge plan">In plans</span>':''}</div>
+      <div class="exmeta">${x.muscles.slice(0,3).map(m=>{const c=musColor(m);return `<span class="pill" style="color:${c};background:${c}22;border:1px solid ${c}55">${esc(m)}</span>`;}).join('')}<span class="pill">${x.type}</span></div></div>
+     <button class="libadd ${already?'added':''}" data-libadd="${x.id}" aria-label="Add ${esc(x.name)}">${already?'✓':'＋'}</button></div>`;}).join('');
+  $('#libList').innerHTML=rows||`<div class="center">No exercise matches "${esc(libQuery)}".<br>Tap "Create a custom exercise" to add it.</div>`;
+  $('#azBar').innerHTML=letters.length>4?letters.map(L=>`<button type="button" data-az="${L}">${L}</button>`).join(''):'';
+}
+function addLibToDay(libId,day){const x=libFind(libId);if(!x)return;
+  let obj;
+  if(x.planEx){if(state.plan[day].some(e=>e.id===x.planEx.id)){toast(x.name+' is already on '+FULLDAY[day]);return;}
+    obj={...x.planEx,muscles:x.planEx.muscles.slice(),steps:x.planEx.steps.slice()};}
+  else obj={id:x.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')+'-'+Math.random().toString(36).slice(2,5),name:x.name,sets:3,reps:'12',type:x.type,anim:'generic',muscles:x.muscles.slice(),steps:(x.steps||[]).slice(),imgKey:x.id};
   state.plan[day].push(obj);if(!state.ex[obj.id])state.ex[obj.id]={weight:null,inc:defInc(obj.type),unit:'kg',loggedThisWeek:false,hitReps:false,suggestion:null,history:[]};
-  save();renderLibrary();if(activeView==='workout')render();if(activeView==='muscles')renderMuscles();toast(x.name+' → '+FULLDAY[day]+' ✓');}
-function openLibDetail(libId){const x=EXLIB.find(e=>e.id===libId);if(!x)return;const im=EXIMG[x.id];
+  save();if($('#libList'))renderLibList();if(activeView==='workout')render();if(activeView==='muscles')renderMuscles();toast(x.name+' → '+FULLDAY[day]+' ✓');}
+function openLibDetail(libId){const x=libFind(libId);if(!x)return;const im=libImgs(x);
   const demo=im?`<img class="demoimg" id="frameA" src="${im[0]}">${im[1]?`<img class="demoimg" id="frameB" src="${im[1]}" style="opacity:0">`:''}`:animSVG('generic');
   $('#libDetailBody').innerHTML=`<div class="demo">${demo}</div><div class="cap">Real demo: start ⇄ finish (loops).</div>
     <div class="dtitle">${esc(x.name)}${x.rec?' <span class="recbadge">⭐ Recommended</span>':''}</div>
@@ -1150,10 +1216,15 @@ function openLibDetail(libId){const x=EXLIB.find(e=>e.id===libId);if(!x)return;c
   $('#libVid').onclick=()=>window.open('https://www.youtube.com/results?search_query='+encodeURIComponent(x.name+' exercise form'),'_blank');
   $('#libAddBtn').onclick=()=>{addLibToDay(x.id,$('#libDetDay').value);closeOne('#libDetailSheet');};
 }
-$('#librarySheet').addEventListener('click',ev=>{const ad=ev.target.closest('[data-libadd]');if(ad){addLibToDay(ad.dataset.libadd,libTargetDay);return;}const it=ev.target.closest('[data-lib]');if(it)openLibDetail(it.dataset.lib);});
-const _bb=$('#browseBtn');if(_bb)_bb.addEventListener('click',()=>{const g=dayLibGroups(activeDay);openLibrary({groups:g.length?g:[...new Set(Object.values(PART_LIB).flat())],day:activeDay});});
+$('#librarySheet').addEventListener('click',ev=>{const t=ev.target;
+  const ad=t.closest('[data-libadd]');if(ad){addLibToDay(ad.dataset.libadd,libTargetDay);return;}
+  const az=t.closest('[data-az]');if(az){const h=$('#az-'+az.dataset.az);if(h)h.scrollIntoView({behavior:'smooth',block:'start'});return;}
+  const sc=t.closest('[data-libscope]');if(sc){libAll=sc.dataset.libscope==='all';renderLibrary();return;}
+  if(t.closest('#libCustom')){const d=libTargetDay,q=libQuery;closeSheets();setTimeout(()=>{activeDay=d;render();openForm(null);const n=$('#fName');if(n&&q)n.value=q;},200);return;}
+  const it=t.closest('[data-lib]');if(it)openLibDetail(it.dataset.lib);});
+const _bb=$('#browseBtn');if(_bb)_bb.addEventListener('click',()=>openLibrary({groups:dayLibGroups(activeDay),day:activeDay}));
 /* ===== workout history ===== */
-function logWorkout(e,on){const ds=dateStr(new Date());state.workoutLog=state.workoutLog||{};const arr=state.workoutLog[ds]=state.workoutLog[ds]||[];
+function logWorkout(e,on,ds){ds=ds||dateStr(new Date());state.workoutLog=state.workoutLog||{};const arr=state.workoutLog[ds]=state.workoutLog[ds]||[];
   if(on){if(!arr.some(w=>w.id===e.id))arr.push({id:e.id,name:e.name,weight:(state.ex[e.id]||{}).weight==null?null:state.ex[e.id].weight,m:(e.muscles||[])[0]||'',muscles:(e.muscles||[]).slice(),sets:Number.isFinite(Number(e.sets))?Number(e.sets):null,reps:e.reps,type:e.type,unit:(state.ex[e.id]||{}).unit||'kg'});}
   else{const i=arr.findIndex(w=>w.id===e.id);if(i>=0)arr.splice(i,1);if(!arr.length)delete state.workoutLog[ds];}}
 function renderHistory(){
@@ -1165,7 +1236,7 @@ function renderHistory(){
     const wRows=wl.length?wl.map(w=>{const c=musColor(w.m);return `<div class="hrow"><span class="hdot" style="background:${c}"></span>${esc(w.name)}${w.weight!=null?` · <b>${w.weight}kg</b>`:''}</div>`;}).join(''):'<div class="hmut">No workout logged.</div>';
     const L=(state.nutri.log||{})[d];let foods=[];if(L)for(const m of ['breakfast','lunch','snack','dinner'])for(const it of (L[m]||[])){const f=foodById(it.foodId);if(f)foods.push((it.qty>1?it.qty+'× ':'')+f.name);}
     const ov=con.kcal>ct?'hover':'';
-    return `<div class="hcard"><div class="hdate">${fmtDate(d)}${bwe?`<span class="pill" style="float:right">⚖ ${bwe.kg}kg</span>`:''}</div>
+    return `<div class="hcard" data-hdate="${d}"><div class="hdate">${fmtDate(d)}${bwe?`<span class="pill" style="float:right">⚖ ${bwe.kg}kg</span>`:''}</div>
       <div class="hsec">🏋️ Workout ${wl.length?`· ${wl.length} done · 🔥 ${burned} kcal`:''}</div>${wRows}
       <div class="hsec">🍽️ Food ${(con.kcal||foods.length)?`· <span class="${ov}">${con.kcal}/${ct} kcal</span> · 💪 ${con.protein}/${pt}g`:''}</div>
       ${foods.length?`<div class="hfoods">${foods.map(f=>`<span class="fchip">${esc(f)}</span>`).join('')}</div>`:'<div class="hmut">No food logged.</div>'}</div>`;}).join('');
@@ -1175,5 +1246,6 @@ function renderHistory(){
 state=load();if(!DAYS.includes(activeDay))activeDay='mon';applyDayTheme();setupVisualTheme();render();setView('overview');
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
 </script>
+<script src="assets/extras.js"></script>
 </body>
 </html>
