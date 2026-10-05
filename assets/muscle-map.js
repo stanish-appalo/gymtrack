@@ -33,7 +33,7 @@ const MuscleAtlas = (() => {
   function figure(view, id, options) {
     const selected = options.selected;
     const region = ([key, shape, fibers]) => {
-      const status = options.primary?.has(key) ? 'primary' : options.secondary?.has(key) ? 'secondary' : selected === key ? 'selected' : 'idle';
+      const status = options.primary?.has(key) ? 'primary' : options.secondary?.has(key) ? 'secondary' : selected === key ? 'selected' : options.heat?.[key]>0 ? 'heat'+Math.min(3,Math.ceil(options.heat[key]*3)) : 'idle';
       const attrs = options.interactive ? `data-mus="${key}" class="muscle-region interactive ${status}" role="button" tabindex="0" aria-label="${names[key]}" aria-pressed="${selected===key}"` : `class="muscle-region ${status}"`;
       return `<g ${attrs} style="fill:url(#${id}-${status})"><title>${names[key]}</title><path d="${shape}"/><path d="${shape}" transform="translate(320 0) scale(-1 1)"/><g class="fibers"><path d="${fibers}"/><path d="${fibers}" transform="translate(320 0) scale(-1 1)"/></g></g>`;
     };
@@ -45,7 +45,7 @@ const MuscleAtlas = (() => {
   }
   function render(options={}) {
     const id='atlas-'+(++sequence), view=options.view||'both', both=view==='both';
-    const colors={idle:['#74819a','#3e4a60'],selected:['#e6b8ff','#9861d2'],primary:['#ffaf76','#e86137'],secondary:['#b88d73','#79563f']};
+    const colors={heat1:['#8664a8','#49325e'],heat2:['#bd8dec','#7b4faa'],heat3:['#edcdff','#b77bea'],idle:['#74819a','#3e4a60'],selected:['#e6b8ff','#9861d2'],primary:['#ffaf76','#e86137'],secondary:['#b88d73','#79563f']};
     const defs=Object.entries(colors).map(([key,c])=>`<linearGradient id="${id}-${key}" x1="0" y1="0" x2="1" y2=".7"><stop stop-color="${c[0]}"/><stop offset="1" stop-color="${c[1]}"/></linearGradient>`).join('');
     return `<svg class="anatomy" viewBox="0 0 ${both?600:340} 492" xmlns="http://www.w3.org/2000/svg" role="${options.interactive?'group':'img'}" aria-label="${both?'Front and back':view==='front'?'Front':'Back'} muscle map"><defs>${defs}</defs>${both?`<g transform="translate(-10 0)">${figure('front',id,{...options,labels:false})}</g><g transform="translate(290 0)">${figure('back',id,{...options,labels:false})}</g>`:`<g transform="translate(10 0)">${figure(view,id,options)}</g>`}</svg>`;
   }

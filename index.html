@@ -228,6 +228,7 @@
   .ftile .ed{position:absolute;top:6px;right:6px;width:23px;height:23px;border-radius:7px;background:var(--card2);border:1px solid var(--line);color:var(--mut);font-size:11px;display:none;place-items:center}
   .nutri.editing .ftile .ed{display:grid}
 </style>
+<link rel="stylesheet" href="assets/theme.css" />
 </head>
 <body>
 <div class="app">
@@ -245,6 +246,7 @@
       </div>
     </div>
   </header>
+  <div id="overviewView" style="display:none"></div>
   <div id="workoutView">
     <nav class="tabs" id="tabs"></nav>
     <section class="parts" id="parts"></section>
@@ -311,6 +313,8 @@
 <script src="assets/exmap.js"></script>
 <script src="assets/library.js"></script>
 <script src="assets/muscle-map.js"></script>
+<script src="assets/insights.js"></script>
+<script src="assets/dashboard.js"></script>
 <script>
 const EXIMG = window.EXIMG || {};
 const EXLIB = window.EXLIB || [];
@@ -1026,13 +1030,15 @@ function openNutriSet(){const n=state.nutri;const mode=n.calTargetOverride!=null
     save();renderFood();closeOne('#nutriSetSheet');toast('Targets updated');};
 }
 function closeOne(sel){$(sel).classList.remove('show');const any=[...document.querySelectorAll('.sheet')].some(s=>s.classList.contains('show'));if(!any)$('#scrim').classList.remove('show');syncNav();}
-function setView(v,fromPop){activeView=v;document.body.classList.remove('editing');$('#editToggle').classList.remove('on');
-  document.querySelectorAll('#bottomnav button').forEach(x=>x.classList.toggle('active',x.dataset.view===v));
+function setView(v,fromPop){const changed=activeView!==v;activeView=v;document.body.classList.remove('editing');$('#editToggle').classList.remove('on');
+  document.querySelectorAll('#bottomnav button').forEach(x=>{x.classList.toggle('active',x.dataset.view===v);if(x.dataset.view===v)x.setAttribute('aria-current','page');else x.removeAttribute('aria-current');});
+  $('#overviewView').style.display=v==='overview'?'':'none';
   $('#workoutView').style.display=v==='workout'?'':'none';$('#foodView').style.display=v==='food'?'':'none';$('#muscleView').style.display=v==='muscles'?'':'none';$('#historyView').style.display=v==='history'?'':'none';
   $('#editToggle').style.display=v==='workout'?'':'none';
   document.body.classList.toggle('foodactive',v==='food');
+  if(v==='overview')renderOverview();
   if(v==='food'){selDate=dateStr(new Date());renderFood();}if(v==='muscles')renderMuscles();if(v==='history')renderHistory();
-  syncNav(fromPop);}
+  if(changed)window.scrollTo(0,0);syncNav(fromPop);}
 $('#bottomnav').addEventListener('click',ev=>{const b=ev.target.closest('[data-view]');if(b)setView(b.dataset.view);});
 $('#foodView').addEventListener('click',ev=>{const t=ev.target;
   if(t.closest('[data-prevday]'))return shiftDate(-1);
@@ -1049,9 +1055,8 @@ $('#foodPickerSheet').addEventListener('click',ev=>{const t=ev.target;
   if(t.closest('#newFood'))return openFoodEdit(null);
   if(t.closest('#editFoods')){$('#foodPickerSheet').classList.toggle('editing');renderPicker();return;}});
 
-/* ===== daily workout color theme ===== */
-const DAY_THEME=[{a:'#3b82f6',b:'#06b6d4'},{a:'#ff6a3d',b:'#ff4d6d'},{a:'#8b5cf6',b:'#d946ef'},{a:'#10b981',b:'#84cc16'},{a:'#f59e0b',b:'#f97316'},{a:'#ec4899',b:'#f43f5e'},{a:'#14b8a6',b:'#6366f1'}];
-function applyDayTheme(){const t=DAY_THEME[new Date().getDay()];document.body.style.setProperty('--acc',t.a);document.body.style.setProperty('--acc2',t.b);document.body.style.setProperty('--grad','linear-gradient(135deg,'+t.a+','+t.b+')');document.querySelector('meta[name=theme-color]').setAttribute('content',t.a);}
+/* ===== consistent violet theme ===== */
+function applyDayTheme(){document.querySelector('meta[name=theme-color]').setAttribute('content','#101013');}
 /* ===== per-muscle tag colors ===== */
 const MUS_COLOR={'Chest':'#ff6a3d','Upper Chest':'#ff8a4c','Triceps':'#f59e0b','Biceps':'#8b5cf6','Shoulders':'#3b82f6','Side Delts':'#3b82f6','Front Delts':'#60a5fa','Rear Delts':'#06b6d4','Traps':'#14b8a6','Lats':'#10b981','Back':'#10b981','Upper Back':'#34d399','Forearms':'#fb923c','Core':'#ec4899','Abs':'#ec4899','Lower Abs':'#f472b6','Obliques':'#f43f5e','Quads':'#eab308','Glutes':'#a855f7','Hamstrings':'#84cc16','Calves':'#22d3ee','Fat-loss':'#94a3b8'};
 function musColor(m){return MUS_COLOR[m]||'#94a3b8';}
@@ -1149,7 +1154,7 @@ $('#librarySheet').addEventListener('click',ev=>{const ad=ev.target.closest('[da
 const _bb=$('#browseBtn');if(_bb)_bb.addEventListener('click',()=>{const g=dayLibGroups(activeDay);openLibrary({groups:g.length?g:[...new Set(Object.values(PART_LIB).flat())],day:activeDay});});
 /* ===== workout history ===== */
 function logWorkout(e,on){const ds=dateStr(new Date());state.workoutLog=state.workoutLog||{};const arr=state.workoutLog[ds]=state.workoutLog[ds]||[];
-  if(on){if(!arr.some(w=>w.id===e.id))arr.push({id:e.id,name:e.name,weight:(state.ex[e.id]||{}).weight==null?null:state.ex[e.id].weight,m:(e.muscles||[])[0]||''});}
+  if(on){if(!arr.some(w=>w.id===e.id))arr.push({id:e.id,name:e.name,weight:(state.ex[e.id]||{}).weight==null?null:state.ex[e.id].weight,m:(e.muscles||[])[0]||'',muscles:(e.muscles||[]).slice(),sets:Number.isFinite(Number(e.sets))?Number(e.sets):null,reps:e.reps,type:e.type,unit:(state.ex[e.id]||{}).unit||'kg'});}
   else{const i=arr.findIndex(w=>w.id===e.id);if(i>=0)arr.splice(i,1);if(!arr.length)delete state.workoutLog[ds];}}
 function renderHistory(){
   const dates=new Set([...Object.keys(state.workoutLog||{}),...Object.keys(state.nutri.log||{}),...Object.keys(state.calLog||{}),...(state.bw||[]).map(b=>b.date)]);
@@ -1167,7 +1172,7 @@ function renderHistory(){
   $('#historyView').innerHTML=`<div class="muscwrap"><div class="msctitle">History</div><p class="muted" style="text-align:center;margin:-4px 0 12px">Your last ${list.length} active days</p>${cards}<div style="height:20px"></div></div>`;
 }
 
-state=load();if(!DAYS.includes(activeDay))activeDay='mon';applyDayTheme();render();
+state=load();if(!DAYS.includes(activeDay))activeDay='mon';applyDayTheme();setupVisualTheme();render();setView('overview');
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
 </script>
 </body>
